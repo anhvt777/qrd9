@@ -1,164 +1,164 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <title>BIDV Excel → QR</title>
-
-  <!-- Thư viện -->
+  <meta charset="UTF-8">
+  <title>Excel → VietQR</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f6fa; padding:20px; }
-    h1 { text-align:center; }
-    #controls { text-align:center; margin-bottom:20px; }
-    #qrs { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
-    .qr-card {
-      background:#fff;
-      border-radius:16px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.1);
-      padding:20px;
-      text-align:center;
-      width:280px;
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f6fa; }
+    header {
+      background: #0070f3;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-    .logo { max-width:140px; margin:0 auto 12px; }
-    .qr-frame { margin:0 auto; border-radius:16px; overflow:hidden; padding:10px; background:#fff; }
-    .info { margin-top:12px; font-size:15px; line-height:1.4; }
-    .highlight { font-weight:bold; color:#006666; }
-    .contact { margin-top:10px; font-size:13px; color:#444; }
-    button { margin-top:12px; padding:6px 12px; border:none; border-radius:6px; cursor:pointer; background:#0070f3; color:#fff; }
-    button:hover { background:#0056b3; }
+    header h1 { margin: 0; font-size: 24px; }
+    main { padding: 20px; }
+    #controls { margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+    #upload { padding: 6px; }
+    #search {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    #downloadAll {
+      background: #28a745;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #downloadAll:hover { background: #218838; }
+    #qrs { display: flex; flex-wrap: wrap; gap: 20px; }
+    .qr-item {
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      width: 200px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .qr-item img { display: block; margin: auto; max-width: 150px; }
+    .qr-item a {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 13px;
+      text-decoration: none;
+      color: #0070f3;
+    }
   </style>
 </head>
 <body>
+  <header>
+    <h1>Chuyển Excel → Mã QR VietQR</h1>
+    <p>Tải file Excel để sinh QR thanh toán, tìm kiếm và lưu về máy tính</p>
+  </header>
 
-<h1>BIDV Excel → QR</h1>
-<div id="controls">
-  <input type="file" id="upload" accept=".xlsx,.xls" />
-  <button id="downloadAll" style="display:none;">⬇ Tải tất cả (ZIP)</button>
-</div>
-<div id="qrs"></div>
+  <main>
+    <div id="controls">
+      <input type="file" id="upload" accept=".xlsx,.xls" />
+      <input type="text" id="search" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." />
+      <button id="downloadAll" style="display:none;">⬇ Tải tất cả QR (ZIP)</button>
+    </div>
 
-<script>
-  let allData = [];
+    <div id="qrs"></div>
+  </main>
 
-  document.getElementById("upload").addEventListener("change", handleFile, false);
-  document.getElementById("downloadAll").addEventListener("click", downloadAll, false);
+  <script>
+    let qrList = [];
+    let allData = []; // lưu toàn bộ QR để tìm kiếm
 
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const data = new Uint8Array(evt.target.result);
-      const wb = XLSX.read(data, {type:'array'});
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
-      allData = [];
+    document.getElementById('upload').addEventListener('change', handleFile, false);
+    document.getElementById('downloadAll').addEventListener('click', downloadAll, false);
+    document.getElementById('search').addEventListener('input', filterQR, false);
 
-      for (let i=1; i<rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row[0]) continue;
-        const obj = {
-          AccountNumber: row[0],
-          AccountName: row[1] || "",
-          Amount: row[2] || "",
-          Remark: row[3] || ""
-        };
-        allData.push(obj);
-      }
-      renderList();
-      document.getElementById("downloadAll").style.display = allData.length ? "inline-block" : "none";
-    };
-    reader.readAsArrayBuffer(file);
-  }
+    function handleFile(e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+          allData = [];
+        qrList = [];
+        document.getElementById('qrs').innerHTML = "";
 
-  function renderList() {
-    const container = document.getElementById("qrs");
-    container.innerHTML = "";
-    allData.forEach((item, idx) => {
-      const card = document.createElement("div");
-      card.className = "qr-card";
+        for (let i = 1; i < rows.length; i++) {
+          const [AccountNumber, Bank, BankBin, Amount, AccountName, Remark] = rows[i];
+          if (!AccountNumber || !BankBin) continue;
 
-      // Logo BIDV
-      const logo = document.createElement("img");
-      logo.src = "_bidvqr1758192361FDNWRSGVXZ.png"; // đổi tên nếu khác
-      logo.className = "logo";
-      card.appendChild(logo);
+          const qrUrl = `https://img.vietqr.io/image/${BankBin}-${AccountNumber}-compact2.png?amount=${Amount || ''}&addInfo=${encodeURIComponent(Remark || '')}&accountName=${encodeURIComponent(AccountName || '')}`;
 
-      // QR Holder
-      const qrDiv = document.createElement("div");
-      qrDiv.className = "qr-frame";
-      qrDiv.id = "qr_"+idx;
-      card.appendChild(qrDiv);
+          const item = {
+            url: qrUrl,
+            filename: `qr_${AccountNumber}.png`,
+            AccountNumber, Bank, Amount, AccountName, Remark
+          };
+          allData.push(item);
+        }
 
-      // Info
-      const info = document.createElement("div");
-      info.className = "info";
-      info.innerHTML = `
-        Số tiền: <span class="highlight">${item.Amount}</span><br>
-        Tên tài khoản: <span class="highlight">${item.AccountName}</span><br>
-        Số tài khoản: <span class="highlight">${item.AccountNumber}</span>
-      `;
-      card.appendChild(info);
+        renderQR(allData);
 
-      const contact = document.createElement("div");
-      contact.className = "contact";
-      contact.textContent = "Mọi chi tiết liên hệ: Mr AnhVT 0987246777";
-      card.appendChild(contact);
-
-      // Nút tải riêng
-      const btn = document.createElement("button");
-      btn.textContent = "⬇ Tải ảnh này";
-      btn.addEventListener("click", ()=>downloadOne(idx, item));
-      card.appendChild(btn);
-
-      container.appendChild(card);
-
-      // Tạo QR
-      const qrText = JSON.stringify(item);
-      new QRCode(qrDiv, {
-        text: qrText,
-        width: 220,
-        height: 220,
-        colorDark:"#000000",
-        colorLight:"#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      });
-    });
-  }
-
-  async function downloadOne(idx, item) {
-    const card = document.querySelectorAll(".qr-card")[idx];
-    const canvas = await htmlToCanvas(card);
-    canvas.toBlob(blob=>{
-      saveAs(blob, `qr_${item.AccountNumber}.png`);
-    });
-  }
-
-  async function downloadAll() {
-    const zip = new JSZip();
-    for (let i=0;i<allData.length;i++) {
-      const item = allData[i];
-      const card = document.querySelectorAll(".qr-card")[i];
-      const canvas = await htmlToCanvas(card);
-      const blob = await new Promise(res=>canvas.toBlob(res,"image/png"));
-      zip.file(`qr_${item.AccountNumber}.png`, blob);
+        if (allData.length > 0) {
+          document.getElementById('downloadAll').style.display = "inline-block";
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
-    const content = await zip.generateAsync({type:"blob"});
-    saveAs(content,"all_qr_codes.zip");
-  }
 
-  // Convert một element thành canvas (dùng html2canvas)
-  async function htmlToCanvas(element) {
-    return await html2canvas(element,{backgroundColor:null});
-  }
-</script>
+    function renderQR(list) {
+      const container = document.getElementById('qrs');
+      container.innerHTML = "";
+      qrList = [];
 
-<!-- html2canvas để chụp DOM thành ảnh -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+      list.forEach(item => {
+        qrList.push({url: item.url, filename: item.filename});
 
+        const div = document.createElement('div');
+        div.className = "qr-item";
+        div.innerHTML = `
+          <p><b>${item.AccountName || ''}</b><br>${item.AccountNumber} (${item.Bank || ''})<br>Số tiền: ${item.Amount || ''}<br>${item.Remark || ''}</p>
+          <img src="${item.url}" alt="QR" />
+          <a href="${item.url}" download="${item.filename}">⬇ Lưu ảnh</a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function filterQR() {
+      const keyword = document.getElementById('search').value.toLowerCase();
+      if (!keyword) {
+        renderQR(allData);
+        return;
+      }
+      const filtered = allData.filter(item =>
+        (item.AccountName && item.AccountName.toLowerCase().includes(keyword)) ||
+        (item.AccountNumber && item.AccountNumber.toString().includes(keyword)) ||
+        (item.Amount && item.Amount.toString().includes(keyword)) ||
+        (item.Remark && item.Remark.toLowerCase().includes(keyword))
+      );
+      renderQR(filtered);
+    }
+
+    async function downloadAll() {
+      const zip = new JSZip();
+      for (const qr of qrList) {
+        const response = await fetch(qr.url);
+        const blob = await response.blob();
+        zip.file(qr.filename, blob);
+      }
+      const content = await zip.generateAsync({type:"blob"});
+      saveAs(content, "all_qr_codes.zip");
+    }
+  </script>
 </body>
 </html>
