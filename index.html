@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <title>Excel → BIDV QR (local)</title>
 
-  <!-- Libraries with fallback -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onload="console.log('XLSX loaded')" onerror="console.error('XLSX failed to load')"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onload="console.log('QRCode.js loaded')" onerror="console.error('QRCode.js failed to load')"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" onload="console.log('JSZip loaded')" onerror="console.error('JSZip failed to load')"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" onload="console.log('FileSaver.js loaded')" onerror="console.error('FileSaver.js failed to load')"></script>
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
@@ -16,615 +16,155 @@
       --primary: #006633;
       --accent: #FFC107;
     }
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f5f6fa;
-      color: #222;
-    }
-    header {
-      background: var(--primary);
-      color: #fff;
-      padding: 18px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    }
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-    }
-    main {
-      padding: 18px;
-      max-width: 1100px;
-      margin: 18px auto;
-    }
-    #controls {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    input[type="file"] {
-      padding: 6px;
-    }
-    input[type="text"], select {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      min-width: 220px;
-    }
-    button {
-      background: var(--primary);
-      color: #fff;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button.ghost {
-      background: #fff;
-      color: var(--primary);
-      border: 1px solid #cfe2ff;
-    }
-    #qrs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-    .qr-item {
-      width: 100%;
-      max-width: 300px;
-      background: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .qr-item img {
-      max-width: 100%;
-      display: block;
-      margin: 0 auto;
-    }
-    .meta {
-      font-size: 13px;
-      color: #333;
-      line-height: 1.2;
-      min-height: 48px;
-    }
-    #progressWrap {
-      margin-top: 10px;
-      display: none;
-    }
-    #progressBar {
-      height: 12px;
-      background: #e9ecef;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    #progressFill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #28a745, #20c997);
-    }
-    footer {
-      margin-top: 24px;
-      text-align: center;
-      color: #666;
-      font-size: 13px;
-    }
-    .small {
-      font-size: 12px;
-      color: #555;
-    }
-    #logoPreview {
-      display: none;
-      max-width: 50px;
-      margin-left: 8px;
-    }
-    #logoPreview img {
-      max-width: 100%;
-    }
-    @media (max-width: 600px) {
-      .qr-item {
-        max-width: 100%;
-      }
-      input[type="text"], select {
-        min-width: 150px;
-      }
-    }
-    #errorLog {
-      color: red;
-      margin-top: 10px;
-      display: none;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f6fa; }
+    header { background: var(--primary); color: #fff; padding: 16px; text-align: center; }
+    #qrs { display: flex; flex-wrap: wrap; gap: 14px; padding: 16px; }
+    .qr-item { background: #fff; padding: 10px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; max-width: 300px; }
+    .meta { font-size: 13px; line-height: 1.3; margin-bottom: 8px; }
+    button { background: var(--primary); color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Excel → BIDV QR (local)</h1>
-    <div class="small">Tạo QR ngân hàng BIDV từ file Excel — chèn logo + số tài khoản</div>
-  </header>
+<header>
+  <h2>Tạo QR BIDV từ Excel</h2>
+  <input id="upload" type="file" accept=".xlsx,.xls"/>
+  <button id="downloadAll">⬇ Tải tất cả (ZIP)</button>
+</header>
 
-  <main>
-    <div id="controls">
-      <input id="upload" type="file" accept=".xlsx,.xls" aria-label="Tải lên file Excel" />
-      <select id="sheetSelect" style="display:none" aria-label="Chọn sheet Excel"></select>
-      <input id="search" type="text" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount..." aria-label="Tìm kiếm dữ liệu" />
-      <label class="ghost" style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:6px;">
-        Logo: <input id="logoFile" type="file" accept="image/*" style="border:none;padding:0;margin:0" aria-label="Tải lên logo" />
-      </label>
-      <div id="logoPreview"><img id="logoImg" /></div>
-      <button id="downloadAll" style="display:none" aria-label="Tải tất cả QR codes dưới dạng ZIP">⬇ Tải tất cả (ZIP)</button>
-      <button id="clearAll" class="ghost" aria-label="Xóa tất cả dữ liệu">Xóa tất cả</button>
-      <button id="downloadSample" class="ghost" aria-label="Tải mẫu Excel">Tải mẫu Excel</button>
-    </div>
-
-    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
-      <label>Kích thước QR (px):
-        <input id="qrSize" type="number" value="250" min="100" max="500" style="width:100px; margin-left:8px" aria-label="Kích thước QR code" />
-      </label>
-      <label>Màu QR: <input id="colorDark" type="color" value="#000000" aria-label="Màu QR code" /></label>
-      <label>Nền: <input id="colorLight" type="color" value="#ffffff" aria-label="Màu nền QR code" /></label>
-      <label>Định dạng: 
-        <select id="qrFormat" aria-label="Định dạng file xuất">
-          <option value="image/png">PNG</option>
-          <option value="image/jpeg">JPEG</option>
-        </select>
-      </label>
-      <label>Kích thước logo (%):
-        <input id="logoSize" type="number" value="15" min="10" max="30" style="width:80px; margin-left:8px" aria-label="Kích thước logo" />
-      </label>
-      <label>Viền QR (px):
-        <input id="qrBorder" type="number" value="20" min="0" max="50" style="width:80px; margin-left:8px" aria-label="Độ dày viền QR" />
-      </label>
-    </div>
-
-    <div id="progressWrap">
-      <div id="progressBar"><div id="progressFill"></div></div>
-      <div id="progressText" class="small" style="margin-top:6px" role="alert"></div>
-    </div>
-
-    <div id="qrs"></div>
-
-    <div id="errorLog"></div>
-
-    <footer>
-      <div class="small">Lưu ý: logo nên upload từ file (tránh dùng URL do CORS). Sử dụng logo BIDV chính thức để khớp thiết kế.</div>
-    </footer>
-  </main>
+<div id="qrs"></div>
 
 <script>
-  // GLOBALS
-  let allData = [];
-  let currentLogoDataUrl = null;
-  const uploadEl = document.getElementById('upload');
-  const sheetSelect = document.getElementById('sheetSelect');
-  const qrsContainer = document.getElementById('qrs');
-  const searchEl = document.getElementById('search');
-  const downloadAllBtn = document.getElementById('downloadAll');
-  const clearAllBtn = document.getElementById('clearAll');
-  const logoFileEl = document.getElementById('logoFile');
-  const qrSizeInput = document.getElementById('qrSize');
-  const progressWrap = document.getElementById('progressWrap');
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-  const colorDarkEl = document.getElementById('colorDark');
-  const colorLightEl = document.getElementById('colorLight');
-  const qrFormatEl = document.getElementById('qrFormat');
-  const logoSizeEl = document.getElementById('logoSize');
-  const qrBorderEl = document.getElementById('qrBorder');
-  const downloadSampleBtn = document.getElementById('downloadSample');
-  const errorLog = document.getElementById('errorLog');
+let allData = [];
+let currentLogoDataUrl = null;
 
-  // Check if all libraries are loaded
-  window.addEventListener('load', () => {
-    if (typeof XLSX === 'undefined' || typeof QRCode === 'undefined' || typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
-      logError('Một hoặc nhiều thư viện không tải được. Kiểm tra kết nối internet hoặc CDN.');
-    } else {
-      console.log('All libraries loaded successfully');
-    }
-  });
+// Màu lấy từ CSS variable
+function getCssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+const COLOR_PRIMARY = getCssVar("--primary");
+const COLOR_ACCENT  = getCssVar("--accent");
 
-  // Event listeners
-  uploadEl.addEventListener('change', handleFile, false);
-  sheetSelect.addEventListener('change', onSheetChange, false);
-  let searchTimeout;
-  searchEl.addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(onSearch, 300);
-  }, false);
-  downloadAllBtn.addEventListener('click', onDownloadAll, false);
-  clearAllBtn.addEventListener('click', onClearAll, false);
-  logoFileEl.addEventListener('change', onLogoChange, false);
-  downloadSampleBtn.addEventListener('click', downloadSampleExcel, false);
-  qrSizeInput.addEventListener('change', () => renderList(allData));
-  colorDarkEl.addEventListener('change', () => renderList(allData));
-  colorLightEl.addEventListener('change', () => renderList(allData));
-  qrFormatEl.addEventListener('change', () => renderList(allData));
-  logoSizeEl.addEventListener('change', () => renderList(allData));
-  qrBorderEl.addEventListener('change', () => renderList(allData));
+document.getElementById("upload").addEventListener("change", handleFile);
+document.getElementById("downloadAll").addEventListener("click", onDownloadAll);
 
-  // --- Read uploaded Excel
-  function handleFile(e) {
-    const f = e.target.files[0];
-    if (!f) {
-      logError('Không có file được chọn.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        sheetSelect.innerHTML = '';
-        if (wb.SheetNames.length > 1) {
-          sheetSelect.style.display = 'inline-block';
-          wb.SheetNames.forEach((name, idx) => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            sheetSelect.appendChild(opt);
-          });
-        } else {
-          sheetSelect.style.display = 'none';
-        }
-        uploadEl._workbook = wb;
-        parseSheet(wb.SheetNames[0]);
-      } catch (err) {
-        logError('Lỗi đọc file Excel: ' + err.message);
-        uploadEl.value = '';
-      }
-    };
-    reader.readAsArrayBuffer(f);
-  }
-
-  function onSheetChange() {
-    const wb = uploadEl._workbook;
-    if (!wb) {
-      logError('Workbook không tồn tại.');
-      return;
-    }
-    parseSheet(sheetSelect.value);
-  }
-
-  function parseSheet(sheetName) {
-    const wb = uploadEl._workbook;
-    const sheet = wb.Sheets[sheetName];
-    if (!sheet) {
-      logError('Sheet không tồn tại: ' + sheetName);
-      return;
-    }
+function handleFile(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    const wb = XLSX.read(new Uint8Array(evt.target.result), { type: "array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    const headers = rows[0] ? rows[0].map(h => (h || '').toString().trim()) : [];
+
     allData = [];
-    for (let r = 1; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row || row.length === 0) continue;
-      const map = {};
-      for (let c = 0; c < headers.length; c++) {
-        const key = headers[c] ? headers[c].toString().trim() : ('col' + c);
-        map[key] = row[c];
-      }
-      const AccountNumber = findField(map, ['AccountNumber', 'Account', 'SoTaiKhoan', 'TaiKhoan', 'accountnumber']) || row[0];
-      const Bank = findField(map, ['Bank', 'NganHang', 'bank']) || 'BIDV';
-      const Amount = findField(map, ['Amount', 'SoTien', 'amount', 'amounts']) || row[3] || '';
-      const AccountName = findField(map, ['AccountName', 'Name', 'Ten', 'accountname']) || row[4] || '';
-      if (!AccountNumber) continue;
-      const obj = {
-        rowIndex: r + 1,
-        AccountNumber: String(AccountNumber),
-        Bank: String(Bank || ''),
-        Amount: Amount,
-        AccountName: String(AccountName || ''),
-      };
-      obj.qrText = JSON.stringify({
-        accountNumber: String(obj.AccountNumber).replace(/[^\w\s.-]/g, ''),
-        accountName: String(obj.AccountName).replace(/[^\w\s.-]/g, ''),
-        bank: String(obj.Bank).replace(/[^\w\s.-]/g, ''),
-        amount: String(obj.Amount).replace(/[^\d.]/g, '')
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r.length) continue;
+      allData.push({
+        AccountNumber: r[0],
+        Bank: r[1] || "BIDV",
+        Amount: r[2],
+        AccountName: r[3] || "",
+        filename: `qr_${r[0]}.png`
       });
-      obj.filename = makeSafeFilename(`qr_${obj.AccountNumber}_${obj.rowIndex}.png`);
-      allData.push(obj);
     }
     renderList(allData);
-    downloadAllBtn.style.display = allData.length ? 'inline-block' : 'none';
-    console.log('Parsed data:', allData);
-  }
+  };
+  reader.readAsArrayBuffer(f);
+}
 
-  function findField(map, candidates) {
-    for (const k of Object.keys(map)) {
-      if (!k) continue;
-      const keyLower = k.toString().toLowerCase();
-      for (const cand of candidates) {
-        if (keyLower === cand.toLowerCase()) return map[k];
-      }
-    }
-    return null;
-  }
-
-  // --- Render list of QR previews
-  function renderList(list) {
-    qrsContainer.innerHTML = '';
-    let index = 0;
-    const batchSize = 10;
-    function renderBatch() {
-      const slice = list.slice(index, index + batchSize);
-      slice.forEach((item, idx) => {
-        const card = document.createElement('div');
-        card.className = 'qr-item';
-        const meta = document.createElement('div');
-        meta.className = 'meta';
-        meta.innerHTML = `<b>${escapeHtml(item.AccountName || '')}</b><br>${escapeHtml(item.AccountNumber)} ${item.Bank ? '(' + escapeHtml(item.Bank) + ')' : ''}<br>Amount: ${escapeHtml(String(item.Amount || ''))}`;
-        card.appendChild(meta);
-
-        const qrHolder = document.createElement('div');
-        qrHolder.style.display = 'inline-block';
-        card.appendChild(qrHolder);
-
-        const previewSize = Math.min(160, parseInt(qrSizeInput.value) || 250);
-        try {
-          new QRCode(qrHolder, {
-            text: item.qrText,
-            width: previewSize,
-            height: previewSize,
-            colorDark: colorDarkEl.value,
-            colorLight: colorLightEl.value,
-            correctLevel: QRCode.CorrectLevel.H
-          });
-        } catch (err) {
-          logError('Lỗi tạo QR cho ' + item.AccountNumber + ': ' + err.message);
-        }
-
-        const btnWrap = document.createElement('div');
-        btnWrap.style.marginTop = '8px';
-
-        const downloadBtn = document.createElement('button');
-        downloadBtn.textContent = '⬇ Lưu ảnh';
-        downloadBtn.style.marginRight = '8px';
-        downloadBtn.setAttribute('aria-label', `Tải QR code cho ${item.AccountNumber}`);
-        downloadBtn.addEventListener('click', async () => {
-          const blob = await generateFinalImageBlob(item.qrText, item.filename, item.AccountNumber);
-          saveAs(blob, item.filename);
-        });
-
-        btnWrap.appendChild(downloadBtn);
-        card.appendChild(btnWrap);
-        qrsContainer.appendChild(card);
-      });
-      index += batchSize;
-      if (index < list.length) {
-        requestAnimationFrame(renderBatch);
-      }
-    }
-    requestAnimationFrame(renderBatch);
-  }
-
-  // --- Generate final image blob
-  async function generateFinalImageBlob(qrText, filename, accountNumber) {
-    const size = parseInt(qrSizeInput.value) || 250;
-    const border = parseInt(qrBorderEl.value) || 20;
-    const colorDark = colorDarkEl.value || '#000';
-    const colorLight = colorLightEl.value || '#fff';
-    const format = qrFormatEl.value || 'image/png';
-    const logoScale = (parseInt(logoSizeEl.value) || 15) / 100;
-
-    const temp = document.createElement('div');
-    try {
-      new QRCode(temp, {
-        text: qrText,
-        width: size,
-        height: size,
-        colorDark,
-        colorLight,
-        correctLevel: QRCode.CorrectLevel.H
-      });
-
-      await new Promise(r => setTimeout(r, 60));
-      const imgOrCanvas = temp.querySelector('img') || temp.querySelector('canvas');
-      if (!imgOrCanvas) throw new Error('Không tạo QR được');
-
-      const dataUrl = imgOrCanvas.tagName.toLowerCase() === 'img' ? imgOrCanvas.src : imgOrCanvas.toDataURL();
-      const qrImg = new Image();
-      qrImg.src = dataUrl;
-      await new Promise((res, rej) => { qrImg.onload = res; qrImg.onerror = rej; });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = size + border * 2;
-      canvas.height = size + border * 2 + 40;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = var(--primary);
-      roundRect(ctx, 0, 0, canvas.width, canvas.height, 10);
-      ctx.fill();
-
-      ctx.strokeStyle = var(--accent);
-      ctx.lineWidth = 4;
-      ctx.strokeRect(border - 2, border - 2, size + 4, size + 4);
-
-      ctx.drawImage(qrImg, border, border, size, size);
-
-      if (currentLogoDataUrl) {
-        const logo = new Image();
-        logo.src = currentLogoDataUrl;
-        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej; });
-        const maxLogoW = size * logoScale;
-        const maxLogoH = size * logoScale;
-        let lw = logo.width, lh = logo.height;
-        const scale = Math.min(maxLogoW / lw, maxLogoH / lh, 1);
-        lw = lw * scale; lh = lh * scale;
-        const lx = border + (size - lw) / 2;
-        const ly = border + (size - lh) / 2;
-        ctx.drawImage(logo, lx, ly, lw, lh);
-      } else {
-        ctx.fillStyle = var(--accent);
-        ctx.beginPath();
-        ctx.moveTo(border + size / 2, border + size / 4);
-        ctx.lineTo(border + size / 2 + 20, border + size / 2);
-        ctx.lineTo(border + size / 2 - 20, border + size / 2);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      ctx.fillStyle = var(--primary);
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('BIDV', border + size / 2, border - 10);
-
-      ctx.fillStyle = var(--primary);
-      ctx.font = '16px Arial';
-      ctx.fillText(`Số tài khoản: ${accountNumber}`, border + size / 2, border + size + 20);
-
-      return await new Promise(res => {
-        canvas.toBlob(blob => res(blob), format, format === 'image/jpeg' ? 0.9 : 1);
-      });
-    } catch (err) {
-      logError('Lỗi tạo ảnh QR: ' + err.message);
-      throw err;
-    } finally {
-      temp.remove();
-    }
-  }
-
-  // --- Download all as ZIP
-  async function onDownloadAll() {
-    if (!allData.length) {
-      logError('Không có dữ liệu để tải.');
-      return;
-    }
-    progressWrap.style.display = 'block';
-    progressFill.style.width = '0%';
-    progressText.textContent = 'Đang tạo ảnh...';
-
-    const zip = new JSZip();
-    let count = 0;
-    for (const item of allData) {
-      progressText.textContent = `Đang tạo ${count + 1}/${allData.length} — ${item.AccountNumber}`;
-      try {
-        const blob = await generateFinalImageBlob(item.qrText, item.filename, item.AccountNumber);
-        const filename = item.filename.replace(/\.png$/, qrFormatEl.value === 'image/jpeg' ? '.jpg' : '.png');
-        zip.file(filename, blob);
-      } catch (err) {
-        logError('Lỗi tạo ảnh cho ' + item.AccountNumber + ': ' + err.message);
-      }
-      count++;
-      const pct = Math.round((count / allData.length) * 100);
-      progressFill.style.width = pct + '%';
-    }
-
-    progressText.textContent = 'Đang nén ZIP...';
-    const content = await zip.generateAsync({ type: 'blob' }, meta => {
-      progressFill.style.width = Math.round(meta.percent) + '%';
-      progressText.textContent = `Nén ${Math.round(meta.percent)}%`;
-    });
-    saveAs(content, `all_bidv_qr_codes${qrFormatEl.value === 'image/jpeg' ? '.zip' : '.zip'}`);
-    progressText.textContent = 'Hoàn tất';
-    setTimeout(() => { progressWrap.style.display = 'none'; }, 1200);
-  }
-
-  // --- Logo upload
-  function onLogoChange(e) {
-    const f = e.target.files[0];
-    if (!f) {
-      currentLogoDataUrl = null;
-      document.getElementById('logoPreview').style.display = 'none';
-      renderList(allData);
-      return;
-    }
-    if (!f.type.startsWith('image/')) {
-      logError('Vui lòng chọn file ảnh (jpg, png, v.v.)');
-      logoFileEl.value = '';
-      return;
-    }
-    if (f.size > 2 * 1024 * 1024) {
-      logError('File logo quá lớn, vui lòng chọn file dưới 2MB');
-      logoFileEl.value = '';
-      return;
-    }
-    const fr = new FileReader();
-    fr.onload = () => {
-      currentLogoDataUrl = fr.result;
-      document.getElementById('logoImg').src = currentLogoDataUrl;
-      document.getElementById('logoPreview').style.display = 'inline-block';
-      renderList(allData);
+function renderList(list) {
+  const container = document.getElementById("qrs");
+  container.innerHTML = "";
+  list.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "qr-item";
+    card.innerHTML = `
+      <div class="meta">
+        <b>${item.AccountName}</b><br/>
+        ${item.AccountNumber} (${item.Bank})<br/>
+        Amount: ${item.Amount}
+      </div>
+    `;
+    const btn = document.createElement("button");
+    btn.textContent = "⬇ Lưu ảnh";
+    btn.onclick = async () => {
+      const blob = await generateFinalImageBlob(item);
+      saveAs(blob, item.filename);
     };
-    fr.readAsDataURL(f);
-  }
+    card.appendChild(btn);
+    container.appendChild(card);
+  });
+}
 
-  // --- Clear all
-  function onClearAll() {
-    uploadEl.value = '';
-    sheetSelect.style.display = 'none';
-    allData = [];
-    qrsContainer.innerHTML = '';
-    downloadAllBtn.style.display = 'none';
-    progressWrap.style.display = 'none';
-    currentLogoDataUrl = null;
-    logoFileEl.value = '';
-    document.getElementById('logoPreview').style.display = 'none';
-    renderList(allData);
-  }
+async function generateFinalImageBlob(item) {
+  const size = 350;
+  const border = 20;
 
-  // --- Search/filter
-  function onSearch() {
-    const kw = (searchEl.value || '').toLowerCase().trim();
-    if (!kw) {
-      renderList(allData);
-      return;
-    }
-    const filtered = allData.filter(item =>
-      (item.AccountName && item.AccountName.toLowerCase().includes(kw)) ||
-      (item.AccountNumber && item.AccountNumber.toLowerCase().includes(kw)) ||
-      (String(item.Amount || '').toLowerCase().includes(kw))
-    );
-    renderList(filtered);
-  }
+  // Tạo QR tạm
+  const temp = document.createElement("div");
+  new QRCode(temp, {
+    text: JSON.stringify(item),
+    width: size,
+    height: size,
+    colorDark: "#000",
+    colorLight: "#fff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+  await new Promise(r => setTimeout(r, 50));
+  const imgOrCanvas = temp.querySelector("img") || temp.querySelector("canvas");
+  const dataUrl = imgOrCanvas.tagName === "IMG" ? imgOrCanvas.src : imgOrCanvas.toDataURL();
 
-  // --- Error logging
-  function logError(message) {
-    console.error(message);
-    errorLog.style.display = 'block';
-    errorLog.textContent = message;
-    setTimeout(() => { errorLog.style.display = 'none'; }, 5000); // Hide after 5 seconds
-  }
+  const qrImg = new Image();
+  qrImg.src = dataUrl;
+  await qrImg.decode();
 
-  // --- Helpers
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
+  // Canvas chính
+  const extra = 160;
+  const canvas = document.createElement("canvas");
+  canvas.width = size + border*2;
+  canvas.height = size + border*2 + extra;
+  const ctx = canvas.getContext("2d");
 
-  function escapeHtml(s) {
-    if (!s) return '';
-    return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c]);
-  }
+  // nền
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  function downloadSampleExcel() {
-    const wb = XLSX.utils.book_new();
-    const data = [
-      ['AccountNumber', 'Bank', 'Amount', 'AccountName'],
-      ['5400166777', 'BIDV', 100000, 'Nguyen Van A'],
-      ['5400166778', 'BIDV', 250000, 'Tran Thi B']
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Template');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'sample_bidv_qr_template.xlsx');
-  }
+  // QR
+  ctx.drawImage(qrImg,border,border,size,size);
 
-  function makeSafeFilename(s) {
-    if (!s) return 'qr.png';
-    return s.replace(/[^a-z0-9_\-\.]/gi, '_');
+  // Logo BIDV mặc định
+  const logo = new Image();
+  logo.src="https://upload.wikimedia.org/wikipedia/commons/6/68/Logo_BIDV.png";
+  await logo.decode();
+  const lw = 80, lh = 40;
+  ctx.drawImage(logo, border+size/2-lw/2, border+size/2-lh/2, lw, lh);
+
+  // Text
+  ctx.fillStyle = COLOR_PRIMARY;
+  ctx.font = "18px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(`Số tiền: ${item.Amount}`, canvas.width/2, size+border+30);
+  ctx.fillText(`Tên TK: ${item.AccountName}`, canvas.width/2, size+border+55);
+  ctx.fillText(`Số TK: ${item.AccountNumber}`, canvas.width/2, size+border+80);
+  ctx.font = "bold 16px Arial";
+  ctx.fillText("Liên hệ: Mr AnhVT 0987246777", canvas.width/2, size+border+110);
+
+  return new Promise(res => canvas.toBlob(res, "image/png"));
+}
+
+async function onDownloadAll() {
+  if (!allData.length) return;
+  const zip = new JSZip();
+  let count=0;
+  for (const item of allData) {
+    const blob = await generateFinalImageBlob(item);
+    zip.file(item.filename, blob);
+    count++;
   }
+  const content = await zip.generateAsync({ type: "blob" });
+  saveAs(content,"all_bidv_qr_codes.zip");
+}
 </script>
 </body>
 </html>
