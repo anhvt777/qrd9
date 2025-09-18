@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>Excel → Custom QR (local)</title>
 
-  <!-- Thư viện -->
+  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -23,7 +23,7 @@
     button{background:var(--primary); color:#fff; padding:8px 12px; border:none; border-radius:6px; cursor:pointer}
     button.ghost{background:#fff;color:var(--primary); border:1px solid #cfe2ff}
     #qrs{display:flex; flex-wrap:wrap; gap:14px}
-    .qr-item{width:220px; background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.06); text-align:center}
+    .qr-item{width:100%; max-width:220px; background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.06); text-align:center}
     .qr-item img{max-width:160px; display:block; margin:8px auto}
     .meta{font-size:13px; color:#333; line-height:1.2; min-height:48px}
     #progressWrap{margin-top:10px; display:none}
@@ -31,6 +31,12 @@
     #progressFill{height:100%; width:0%; background:linear-gradient(90deg,#28a745,#20c997)}
     footer{margin-top:24px; text-align:center; color:#666; font-size:13px}
     .small{font-size:12px;color:#555}
+    #logoPreview{display:none; max-width:50px; margin-left:8px}
+    #logoPreview img{max-width:100%}
+    @media (max-width: 600px) {
+      .qr-item{max-width:100%}
+      input[type=text], select{min-width:150px}
+    }
   </style>
 </head>
 <body>
@@ -41,31 +47,65 @@
 
   <main>
     <div id="controls">
-      <input id="upload" type="file" accept=".xlsx,.xls" />
-      <select id="sheetSelect" style="display:none"></select>
-      <input id="search" type="text" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." />
+      <input id="upload" type="file" accept=".xlsx,.xls" aria-label="Tải lên file Excel" />
+      <select id="sheetSelect" style="display:none" aria-label="Chọn sheet Excel"></select>
+      <input id="search" type="text" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." aria-label="Tìm kiếm dữ liệu" />
       <label class="ghost" style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:6px;">
-        Logo:
-        <input id="logoFile" type="file" accept="image/*" style="border:none;padding:0;margin:0" />
+        Logo: <input id="logoFile" type="file" accept="image/*" style="border:none;padding:0;margin:0" aria-label="Tải lên logo" />
       </label>
-      <button id="downloadAll" style="display:none">⬇ Tải tất cả (ZIP)</button>
-      <button id="downloadSample" class="ghost">Tải mẫu Excel</button>
+      <div id="logoPreview"><img id="logoImg" /></div>
+      <button id="downloadAll" style="display:none" aria-label="Tải tất cả QR codes dưới dạng ZIP">⬇ Tải tất cả (ZIP)</button>
+      <button id="clearAll" class="ghost" aria-label="Xóa tất cả dữ liệu">Xóa tất cả</button>
+      <button id="downloadSample" class="ghost" aria-label="Tải mẫu Excel">Tải mẫu Excel</button>
     </div>
 
-    <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
       <label>Kích thước QR (px):
-        <input id="qrSize" type="number" value="400" style="width:100px; margin-left:8px" />
+        <input id="qrSize" type="number" value="400" min="100" max="1000" style="width:100px; margin-left:8px" aria-label="Kích thước QR code" />
       </label>
-      <label>Màu QR: <input id="colorDark" type="color" value="#000000" /></label>
-      <label>Nền: <input id="colorLight" type="color" value="#ffffff" /></label>
-      <label style="margin-left:8px">Ghi chú mặc định:
-        <input id="defaultNote" type="text" placeholder="Dòng ghi chú nếu hàng không có Remark" style="width:220px; margin-left:8px" />
+      <label>Màu QR: <input id="colorDark" type="color" value="#000000" aria-label="Màu QR code" /></label>
+      <label>Nền: <input id="colorLight" type="color" value="#ffffff" aria-label="Màu nền QR code" /></label>
+      <label>Định dạng: 
+        <select id="qrFormat" aria-label="Định dạng file xuất">
+          <option value="image/png">PNG</option>
+          <option value="image/jpeg">JPEG</option>
+        </select>
+      </label>
+      <label>Kích thước logo (%):
+        <input id="logoSize" type="number" value="20" min="10" max="30" style="width:80px; margin-left:8px" aria-label="Kích thước logo" />
+      </label>
+      <label>Vị trí logo: 
+        <select id="logoPosition" aria-label="Vị trí logo">
+          <option value="center">Giữa</option>
+          <option value="top-left">Góc trên-trái</option>
+          <option value="top-right">Góc trên-phải</option>
+          <option value="bottom-left">Góc dưới-trái</option>
+          <option value="bottom-right">Góc dưới-phải</option>
+        </select>
+      </label>
+      <label>Font chữ ghi chú:
+        <select id="noteFont" aria-label="Font chữ ghi chú">
+          <option value="Arial">Arial</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Courier New">Courier New</option>
+        </select>
+      </label>
+      <label>Kích thước chữ (px):
+        <input id="noteSize" type="number" value="16" min="10" max="24" style="width:80px; margin-left:8px" aria-label="Kích thước chữ ghi chú" />
+      </label>
+      <label>Màu chữ: <input id="noteColor" type="color" value="#000000" aria-label="Màu chữ ghi chú" /></label>
+      <label>Viền QR (px):
+        <input id="qrBorder" type="number" value="10" min="0" max="50" style="width:80px; margin-left:8px" aria-label="Độ dày viền QR" />
+      </label>
+      <label style="flex:1">Ghi chú mặc định:
+        <input id="defaultNote" type="text" placeholder="Dòng ghi chú nếu hàng không có Remark" style="width:100%; margin-left:8px" aria-label="Ghi chú mặc định" />
       </label>
     </div>
 
     <div id="progressWrap">
       <div id="progressBar"><div id="progressFill"></div></div>
-      <div id="progressText" class="small" style="margin-top:6px"></div>
+      <div id="progressText" class="small" style="margin-top:6px" role="alert"></div>
     </div>
 
     <div id="qrs"></div>
@@ -77,13 +117,14 @@
 
 <script>
   // GLOBALS
-  let allData = []; // mảng object: {rowIndex, AccountNumber, Bank, BankBin, Amount, AccountName, Remark, qrText, filename}
-  let currentLogoDataUrl = null; // base64 of uploaded logo
+  let allData = [];
+  let currentLogoDataUrl = null;
   const uploadEl = document.getElementById('upload');
   const sheetSelect = document.getElementById('sheetSelect');
   const qrsContainer = document.getElementById('qrs');
   const searchEl = document.getElementById('search');
   const downloadAllBtn = document.getElementById('downloadAll');
+  const clearAllBtn = document.getElementById('clearAll');
   const logoFileEl = document.getElementById('logoFile');
   const qrSizeInput = document.getElementById('qrSize');
   const progressWrap = document.getElementById('progressWrap');
@@ -91,41 +132,67 @@
   const progressText = document.getElementById('progressText');
   const colorDarkEl = document.getElementById('colorDark');
   const colorLightEl = document.getElementById('colorLight');
+  const qrFormatEl = document.getElementById('qrFormat');
+  const logoSizeEl = document.getElementById('logoSize');
+  const logoPositionEl = document.getElementById('logoPosition');
+  const noteFontEl = document.getElementById('noteFont');
+  const noteSizeEl = document.getElementById('noteSize');
+  const noteColorEl = document.getElementById('noteColor');
+  const qrBorderEl = document.getElementById('qrBorder');
   const defaultNoteEl = document.getElementById('defaultNote');
   const downloadSampleBtn = document.getElementById('downloadSample');
 
+  // Event listeners
   uploadEl.addEventListener('change', handleFile, false);
   sheetSelect.addEventListener('change', onSheetChange, false);
-  searchEl.addEventListener('input', onSearch, false);
+  let searchTimeout;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(onSearch, 300);
+  }, false);
   downloadAllBtn.addEventListener('click', onDownloadAll, false);
+  clearAllBtn.addEventListener('click', onClearAll, false);
   logoFileEl.addEventListener('change', onLogoChange, false);
   downloadSampleBtn.addEventListener('click', downloadSampleExcel, false);
+  qrSizeInput.addEventListener('change', () => renderList(allData));
+  colorDarkEl.addEventListener('change', () => renderList(allData));
+  colorLightEl.addEventListener('change', () => renderList(allData));
+  qrFormatEl.addEventListener('change', () => renderList(allData));
+  logoSizeEl.addEventListener('change', () => renderList(allData));
+  logoPositionEl.addEventListener('change', () => renderList(allData));
+  noteFontEl.addEventListener('change', () => renderList(allData));
+  noteSizeEl.addEventListener('change', () => renderList(allData));
+  noteColorEl.addEventListener('change', () => renderList(allData));
+  qrBorderEl.addEventListener('change', () => renderList(allData));
+  defaultNoteEl.addEventListener('input', () => renderList(allData));
 
-  // --- Read uploaded Excel, populate allData and UI
+  // --- Read uploaded Excel
   function handleFile(e) {
     const f = e.target.files[0];
     if (!f) return;
     const reader = new FileReader();
     reader.onload = function(evt) {
-      const data = new Uint8Array(evt.target.result);
-      const wb = XLSX.read(data, {type:'array'});
-      // build sheet select if multiple
-      sheetSelect.innerHTML = '';
-      if (wb.SheetNames.length > 1) {
-        sheetSelect.style.display = 'inline-block';
-        wb.SheetNames.forEach((name, idx) => {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          sheetSelect.appendChild(opt);
-        });
-      } else {
-        sheetSelect.style.display = 'none';
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        sheetSelect.innerHTML = '';
+        if (wb.SheetNames.length > 1) {
+          sheetSelect.style.display = 'inline-block';
+          wb.SheetNames.forEach((name, idx) => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            sheetSelect.appendChild(opt);
+          });
+        } else {
+          sheetSelect.style.display = 'none';
+        }
+        uploadEl._workbook = wb;
+        parseSheet(wb.SheetNames[0]);
+      } catch (err) {
+        alert('Lỗi đọc file Excel: ' + err.message);
+        uploadEl.value = '';
       }
-      // store workbook on input element for later use
-      uploadEl._workbook = wb;
-      // parse first (or selected) sheet
-      parseSheet(wb.SheetNames[0]);
     };
     reader.readAsArrayBuffer(f);
   }
@@ -140,49 +207,41 @@
     const wb = uploadEl._workbook;
     const sheet = wb.Sheets[sheetName];
     if (!sheet) return;
-    const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
-    // find header row (assume first row)
-    const headers = rows[0] ? rows[0].map(h => (h||'').toString().trim()) : [];
-    // Convert rows to objects using header names or fallback to known names
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    const headers = rows[0] ? rows[0].map(h => (h || '').toString().trim()) : [];
     allData = [];
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
       if (!row || row.length === 0) continue;
-      // find values by header names (case-insensitive)
       const map = {};
       for (let c = 0; c < headers.length; c++) {
-        const key = headers[c] ? headers[c].toString().trim() : ('col'+c);
+        const key = headers[c] ? headers[c].toString().trim() : ('col' + c);
         map[key] = row[c];
       }
-      // fallback mapping (common column names)
-      const AccountNumber = findField(map, ['AccountNumber','Account','SoTaiKhoan','TaiKhoan','accountnumber']) || row[0];
-      const Bank = findField(map, ['Bank','NganHang','bank']) || row[1] || '';
-      const BankBin = findField(map, ['BankBin','BIN','bankbin']) || '';
-      const Amount = findField(map, ['Amount','SoTien','amount','amounts']) || row[3] || '';
-      const AccountName = findField(map, ['AccountName','Name','Ten','accountname']) || row[4] || '';
-      const Remark = findField(map, ['Remark','Note','GhiChu','remark','note']) || row[5] || '';
-
-      // if AccountNumber empty skip
+      const AccountNumber = findField(map, ['AccountNumber', 'Account', 'SoTaiKhoan', 'TaiKhoan', 'accountnumber']) || row[0];
+      const Bank = findField(map, ['Bank', 'NganHang', 'bank']) || row[1] || '';
+      const BankBin = findField(map, ['BankBin', 'BIN', 'bankbin']) || '';
+      const Amount = findField(map, ['Amount', 'SoTien', 'amount', 'amounts']) || row[3] || '';
+      const AccountName = findField(map, ['AccountName', 'Name', 'Ten', 'accountname']) || row[4] || '';
+      const Remark = findField(map, ['Remark', 'Note', 'GhiChu', 'remark', 'note']) || row[5] || '';
       if (!AccountNumber) continue;
-
       const obj = {
-        rowIndex: r+1,
-        AccountNumber: String(AccountNumber).toString(),
+        rowIndex: r + 1,
+        AccountNumber: String(AccountNumber),
         Bank: String(Bank || ''),
         BankBin: String(BankBin || ''),
         Amount: Amount,
         AccountName: String(AccountName || ''),
         Remark: String(Remark || ''),
       };
-      // create qrText as JSON string (you can change format here)
       obj.qrText = JSON.stringify({
-        accountNumber: obj.AccountNumber,
-        accountName: obj.AccountName,
-        bank: obj.Bank,
-        amount: obj.Amount,
-        remark: obj.Remark
+        accountNumber: String(obj.AccountNumber).replace(/[^\w\s.-]/g, ''),
+        accountName: String(obj.AccountName).replace(/[^\w\s.-]/g, ''),
+        bank: String(obj.Bank).replace(/[^\w\s.-]/g, ''),
+        amount: String(obj.Amount).replace(/[^\d.]/g, ''),
+        remark: String(obj.Remark).replace(/[^\w\s.-]/g, '')
       });
-      obj.filename = makeSafeFilename(`qr_${obj.AccountNumber}_${obj.RowIndex || obj.rowIndex}.png`);
+      obj.filename = makeSafeFilename(`qr_${obj.AccountNumber}_${obj.rowIndex}.png`);
       allData.push(obj);
     }
     renderList(allData);
@@ -200,141 +259,153 @@
     return null;
   }
 
-  function makeSafeFilename(s) {
-    return s.replace(/[^a-z0-9_\-\.]/gi, '_');
-  }
-
-  // --- Render list of QR previews
+  // --- Render list of QR previews (batched for performance)
   function renderList(list) {
     qrsContainer.innerHTML = '';
-    list.forEach((item, idx) => {
-      const card = document.createElement('div');
-      card.className = 'qr-item';
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      meta.innerHTML = `<b>${escapeHtml(item.AccountName || '')}</b><br>${escapeHtml(item.AccountNumber)} ${item.Bank ? '('+escapeHtml(item.Bank)+')' : ''}<br>Amount: ${escapeHtml(String(item.Amount || ''))}`;
-      card.appendChild(meta);
+    let index = 0;
+    const batchSize = 10;
+    function renderBatch() {
+      const slice = list.slice(index, index + batchSize);
+      slice.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'qr-item';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.innerHTML = `<b>${escapeHtml(item.AccountName || '')}</b><br>${escapeHtml(item.AccountNumber)} ${item.Bank ? '(' + escapeHtml(item.Bank) + ')' : ''}<br>Amount: ${escapeHtml(String(item.Amount || ''))}`;
+        card.appendChild(meta);
 
-      // placeholder image (will be filled by QRCode.js)
-      const qrHolder = document.createElement('div');
-      qrHolder.style.display='inline-block';
-      card.appendChild(qrHolder);
+        const qrHolder = document.createElement('div');
+        qrHolder.style.display = 'inline-block';
+        card.appendChild(qrHolder);
 
-      // generate QR into qrHolder (smaller preview)
-      const previewSize = Math.min(160, parseInt(qrSizeInput.value) || 160);
-      new QRCode(qrHolder, {
-        text: item.qrText,
-        width: previewSize,
-        height: previewSize,
-        colorDark: colorDarkEl.value,
-        colorLight: colorLightEl.value,
+        const previewSize = Math.min(160, parseInt(qrSizeInput.value) || 160);
+        new QRCode(qrHolder, {
+          text: item.qrText,
+          width: previewSize,
+          height: previewSize,
+          colorDark: colorDarkEl.value,
+          colorLight: colorLightEl.value,
+          correctLevel: QRCode.CorrectLevel.H
+        });
+
+        const btnWrap = document.createElement('div');
+        btnWrap.style.marginTop = '8px';
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = '⬇ Lưu ảnh';
+        downloadBtn.style.marginRight = '8px';
+        downloadBtn.setAttribute('aria-label', `Tải QR code cho ${item.AccountNumber}`);
+        downloadBtn.addEventListener('click', async () => {
+          const note = item.Remark || defaultNoteEl.value || '';
+          const blob = await generateFinalImageBlob(item.qrText, item.filename, note);
+          saveAs(blob, item.filename);
+        });
+
+        const showNote = document.createElement('div');
+        showNote.className = 'small';
+        showNote.style.marginTop = '6px';
+        showNote.textContent = item.Remark || defaultNoteEl.value || '';
+
+        btnWrap.appendChild(downloadBtn);
+        card.appendChild(btnWrap);
+        card.appendChild(showNote);
+        qrsContainer.appendChild(card);
+      });
+      index += batchSize;
+      if (index < list.length) {
+        requestAnimationFrame(renderBatch);
+      }
+    }
+    requestAnimationFrame(renderBatch);
+  }
+
+  // --- Generate final image blob with customizations
+  async function generateFinalImageBlob(qrText, filename, note) {
+    const size = parseInt(qrSizeInput.value) || 400;
+    const border = parseInt(qrBorderEl.value) || 0;
+    const colorDark = colorDarkEl.value || '#000';
+    const colorLight = colorLightEl.value || '#fff';
+    const format = qrFormatEl.value || 'image/png';
+    const logoScale = (parseInt(logoSizeEl.value) || 20) / 100;
+    const noteFont = noteFontEl.value || 'Arial';
+    const noteSize = parseInt(noteSizeEl.value) || 16;
+    const noteColor = noteColorEl.value || '#000';
+
+    const temp = document.createElement('div');
+    try {
+      new QRCode(temp, {
+        text: qrText,
+        width: size,
+        height: size,
+        colorDark,
+        colorLight,
         correctLevel: QRCode.CorrectLevel.H
       });
 
-      // buttons
-      const btnWrap = document.createElement('div');
-      btnWrap.style.marginTop = '8px';
+      await new Promise(r => setTimeout(r, 60));
+      const imgOrCanvas = temp.querySelector('img') || temp.querySelector('canvas');
+      if (!imgOrCanvas) throw new Error('Không tạo QR được');
 
-      const downloadBtn = document.createElement('button');
-      downloadBtn.textContent = '⬇ Lưu ảnh';
-      downloadBtn.style.marginRight = '8px';
-      downloadBtn.addEventListener('click', async ()=> {
-        const note = item.Remark || defaultNoteEl.value || '';
-        const blob = await generateFinalImageBlob(item.qrText, item.filename, note);
-        saveAs(blob, item.filename || ('qr_'+item.AccountNumber+'.png'));
+      const dataUrl = imgOrCanvas.tagName.toLowerCase() === 'img' ? imgOrCanvas.src : imgOrCanvas.toDataURL();
+      const qrImg = new Image();
+      qrImg.src = dataUrl;
+      await new Promise((res, rej) => { qrImg.onload = res; qrImg.onerror = rej; });
+
+      const noteHeight = note ? 48 : 0;
+      const canvas = document.createElement('canvas');
+      canvas.width = size + border * 2;
+      canvas.height = size + noteHeight + border * 2;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = colorLight;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(qrImg, border, border, size, size);
+
+      if (currentLogoDataUrl) {
+        const logo = new Image();
+        logo.src = currentLogoDataUrl;
+        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej; });
+        const maxLogoW = size * logoScale;
+        const maxLogoH = size * logoScale;
+        let lw = logo.width, lh = logo.height;
+        const scale = Math.min(maxLogoW / lw, maxLogoH / lh, 1);
+        lw = lw * scale; lh = lh * scale;
+        let lx, ly;
+        const position = logoPositionEl.value || 'center';
+        switch (position) {
+          case 'top-left': lx = border + 10; ly = border + 10; break;
+          case 'top-right': lx = border + size - lw - 10; ly = border + 10; break;
+          case 'bottom-left': lx = border + 10; ly = border + size - lh - 10; break;
+          case 'bottom-right': lx = border + size - lw - 10; ly = border + size - lh - 10; break;
+          default: lx = border + (size - lw) / 2; ly = border + (size - lh) / 2; break;
+        }
+        const pad = 6;
+        const bx = lx - pad, by = ly - pad, bw = lw + pad * 2, bh = lh + pad * 2;
+        const r = Math.min(12, Math.floor(Math.min(bw, bh) / 6));
+        roundRect(ctx, bx, by, bw, bh, r);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.drawImage(logo, lx, ly, lw, lh);
+      }
+
+      if (note) {
+        ctx.fillStyle = noteColor;
+        ctx.textAlign = 'center';
+        ctx.font = `${noteSize}px ${noteFont}`;
+        const maxWidth = size - 20;
+        wrapText(ctx, note, canvas.width / 2, size + border + 26, maxWidth, noteSize + 2);
+      }
+
+      return await new Promise(res => {
+        canvas.toBlob(blob => res(blob), format, format === 'image/jpeg' ? 0.9 : 1);
       });
-
-      const showNote = document.createElement('div');
-      showNote.className = 'small';
-      showNote.style.marginTop='6px';
-      showNote.textContent = item.Remark || '';
-
-      btnWrap.appendChild(downloadBtn);
-      card.appendChild(btnWrap);
-      card.appendChild(showNote);
-
-      qrsContainer.appendChild(card);
-    });
-  }
-
-  // --- Generate final image blob: create QR (large), draw logo and note onto canvas, return blob
-  async function generateFinalImageBlob(qrText, filename, note) {
-    const size = parseInt(qrSizeInput.value) || 400;
-    const colorDark = colorDarkEl.value || '#000';
-    const colorLight = colorLightEl.value || '#fff';
-    // create QR in temp div
-    const temp = document.createElement('div');
-    new QRCode(temp, {
-      text: qrText,
-      width: size,
-      height: size,
-      colorDark,
-      colorLight,
-      correctLevel: QRCode.CorrectLevel.H
-    });
-
-    // small wait for DOM
-    await new Promise(r => setTimeout(r, 60));
-    const imgOrCanvas = temp.querySelector('img') || temp.querySelector('canvas');
-    if (!imgOrCanvas) throw new Error('Không tạo QR được');
-
-    const dataUrl = imgOrCanvas.tagName.toLowerCase() === 'img' ? imgOrCanvas.src : imgOrCanvas.toDataURL();
-    const qrImg = new Image();
-    qrImg.src = dataUrl;
-    await new Promise((res, rej) => { qrImg.onload = res; qrImg.onerror = rej; });
-
-    // prepare canvas
-    const noteHeight = 48;
-    const padding = 10;
-    const canvas = document.createElement('canvas');
-    canvas.width = qrImg.width;
-    canvas.height = qrImg.height + noteHeight + padding;
-    const ctx = canvas.getContext('2d');
-
-    // fill background with colorLight
-    ctx.fillStyle = colorLight;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // draw qr
-    ctx.drawImage(qrImg, 0, 0);
-
-    // draw logo if present (limit to 20% of QR)
-    if (currentLogoDataUrl) {
-      const logo = new Image();
-      logo.src = currentLogoDataUrl;
-      await new Promise((res,rej) => { logo.onload = res; logo.onerror = rej; });
-      const maxLogoW = canvas.width * 0.22;
-      const maxLogoH = canvas.height * 0.22;
-      let lw = logo.width, lh = logo.height;
-      const scale = Math.min(maxLogoW / lw, maxLogoH / lh, 1);
-      lw = lw * scale; lh = lh * scale;
-      const lx = (canvas.width - lw)/2;
-      const ly = (canvas.width - lh)/2; // center inside QR area
-      // rounded white background for logo
-      const pad = 6;
-      const bx = lx - pad, by = ly - pad, bw = lw + pad*2, bh = lh + pad*2;
-      const r = Math.min(12, Math.floor(Math.min(bw,bh)/6));
-      roundRect(ctx, bx, by, bw, bh, r);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      // draw logo
-      ctx.drawImage(logo, lx, ly, lw, lh);
+    } finally {
+      temp.remove();
     }
-
-    // draw note text (wrap if needed)
-    ctx.fillStyle = '#000';
-    ctx.textAlign = 'center';
-    ctx.font = '16px Arial';
-    const maxWidth = canvas.width - 20;
-    wrapText(ctx, note || '', canvas.width/2, qrImg.height + 26, maxWidth, 18);
-
-    // return blob
-    return await new Promise(res => {
-      canvas.toBlob(blob => res(blob), 'image/png');
-    });
   }
 
-  // --- Download all as ZIP with progress
+  // --- Download all as ZIP
   async function onDownloadAll() {
     if (!allData.length) return;
     progressWrap.style.display = 'block';
@@ -344,15 +415,13 @@
     const zip = new JSZip();
     let count = 0;
     for (const item of allData) {
-      // update UI
-      progressText.textContent = `Đang tạo ${count+1}/${allData.length} — ${item.AccountNumber}`;
+      progressText.textContent = `Đang tạo ${count + 1}/${allData.length} — ${item.AccountNumber}`;
       const note = item.Remark || defaultNoteEl.value || '';
       try {
-        const blob = await generateFinalImageBlob(item.qrText, item.filename || ('qr_'+item.AccountNumber+'.png'), note);
-        const filename = item.filename || ('qr_'+item.AccountNumber+'.png');
+        const blob = await generateFinalImageBlob(item.qrText, item.filename, note);
+        const filename = item.filename.replace(/\.png$/, qrFormatEl.value === 'image/jpeg' ? '.jpg' : '.png');
         zip.file(filename, blob);
       } catch (err) {
-        // if any error, still continue
         console.error('Lỗi tạo ảnh cho', item, err);
       }
       count++;
@@ -361,24 +430,56 @@
     }
 
     progressText.textContent = 'Đang nén ZIP...';
-    const content = await zip.generateAsync({type:'blob'}, meta => {
+    const content = await zip.generateAsync({ type: 'blob' }, meta => {
       progressFill.style.width = Math.round(meta.percent) + '%';
       progressText.textContent = `Nén ${Math.round(meta.percent)}%`;
     });
-    saveAs(content, 'all_qr_codes.zip');
+    saveAs(content, `all_qr_codes${qrFormatEl.value === 'image/jpeg' ? '.zip' : '.zip'}`);
     progressText.textContent = 'Hoàn tất';
-    setTimeout(()=>{ progressWrap.style.display = 'none'; }, 1200);
+    setTimeout(() => { progressWrap.style.display = 'none'; }, 1200);
   }
 
-  // --- Logo upload (file -> dataURL)
+  // --- Logo upload
   function onLogoChange(e) {
     const f = e.target.files[0];
-    if (!f) { currentLogoDataUrl = null; return; }
+    if (!f) {
+      currentLogoDataUrl = null;
+      document.getElementById('logoPreview').style.display = 'none';
+      renderList(allData);
+      return;
+    }
+    if (!f.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh (jpg, png, v.v.)');
+      logoFileEl.value = '';
+      return;
+    }
+    if (f.size > 2 * 1024 * 1024) {
+      alert('File logo quá lớn, vui lòng chọn file dưới 2MB');
+      logoFileEl.value = '';
+      return;
+    }
     const fr = new FileReader();
     fr.onload = () => {
       currentLogoDataUrl = fr.result;
+      document.getElementById('logoImg').src = currentLogoDataUrl;
+      document.getElementById('logoPreview').style.display = 'inline-block';
+      renderList(allData);
     };
     fr.readAsDataURL(f);
+  }
+
+  // --- Clear all
+  function onClearAll() {
+    uploadEl.value = '';
+    sheetSelect.style.display = 'none';
+    allData = [];
+    qrsContainer.innerHTML = '';
+    downloadAllBtn.style.display = 'none';
+    progressWrap.style.display = 'none';
+    currentLogoDataUrl = null;
+    logoFileEl.value = '';
+    document.getElementById('logoPreview').style.display = 'none';
+    renderList(allData);
   }
 
   // --- Search/filter
@@ -429,30 +530,26 @@
 
   function escapeHtml(s) {
     if (!s) return '';
-    return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]);
+    return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c]);
   }
 
-  // --- Sample Excel generator (xlsx) — creates a simple template with headers and example rows
   function downloadSampleExcel() {
     const wb = XLSX.utils.book_new();
     const data = [
-      ['AccountNumber','Bank','BankBin','Amount','AccountName','Remark'],
-      ['123456789','BIDV','970418',100000,'Nguyen Van A','Hoc phi thang 9'],
-      ['987654321','VCB','970436',250000,'Tran Thi B','Thanh toan hop dong']
+      ['AccountNumber', 'Bank', 'BankBin', 'Amount', 'AccountName', 'Remark'],
+      ['123456789', 'BIDV', '970418', 100000, 'Nguyen Van A', 'Hoc phi thang 9'],
+      ['987654321', 'VCB', '970436', 250000, 'Tran Thi B', 'Thanh toan hop dong']
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
-    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    saveAs(new Blob([wbout], {type:'application/octet-stream'}), 'sample_qr_template.xlsx');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'sample_qr_template.xlsx');
   }
 
-  // --- small utility: safe filename builder
   function makeSafeFilename(s) {
     if (!s) return 'qr.png';
     return s.replace(/[^a-z0-9_\-\.]/gi, '_');
   }
-
-  // initial no-op
 </script>
 </body>
 </html>
