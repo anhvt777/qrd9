@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <title>Excel → Custom QR (local)</title>
+  <title>Excel → BIDV QR (local)</title>
 
   <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -10,46 +10,144 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root{--primary:#0070f3}
-    body{font-family:Inter, Arial, sans-serif; margin:0; background:#f5f6fa; color:#222}
-    header{background:var(--primary); color:#fff; padding:18px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.12)}
-    header h1{margin:0;font-size:20px}
-    main{padding:18px; max-width:1100px; margin:18px auto}
-    #controls{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px}
-    input[type=file]{padding:6px}
-    input[type=text], select{padding:8px; border-radius:6px; border:1px solid #ddd; min-width:220px}
-    button{background:var(--primary); color:#fff; padding:8px 12px; border:none; border-radius:6px; cursor:pointer}
-    button.ghost{background:#fff;color:var(--primary); border:1px solid #cfe2ff}
-    #qrs{display:flex; flex-wrap:wrap; gap:14px}
-    .qr-item{width:100%; max-width:220px; background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.06); text-align:center}
-    .qr-item img{max-width:160px; display:block; margin:8px auto}
-    .meta{font-size:13px; color:#333; line-height:1.2; min-height:48px}
-    #progressWrap{margin-top:10px; display:none}
-    #progressBar{height:12px; background:#e9ecef; border-radius:8px; overflow:hidden}
-    #progressFill{height:100%; width:0%; background:linear-gradient(90deg,#28a745,#20c997)}
-    footer{margin-top:24px; text-align:center; color:#666; font-size:13px}
-    .small{font-size:12px;color:#555}
-    #logoPreview{display:none; max-width:50px; margin-left:8px}
-    #logoPreview img{max-width:100%}
+    :root {
+      --primary: #006633; /* Teal color similar to BIDV */
+      --accent: #FFC107; /* Yellow for frame and logo */
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5f6fa;
+      color: #222;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    main {
+      padding: 18px;
+      max-width: 1100px;
+      margin: 18px auto;
+    }
+    #controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    input[type="file"] {
+      padding: 6px;
+    }
+    input[type="text"], select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      min-width: 220px;
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button.ghost {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid #cfe2ff;
+    }
+    #qrs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .qr-item {
+      width: 100%;
+      max-width: 300px; /* Larger to accommodate design */
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .qr-item img {
+      max-width: 100%;
+      display: block;
+      margin: 0 auto;
+    }
+    .meta {
+      font-size: 13px;
+      color: #333;
+      line-height: 1.2;
+      min-height: 48px;
+    }
+    #progressWrap {
+      margin-top: 10px;
+      display: none;
+    }
+    #progressBar {
+      height: 12px;
+      background: #e9ecef;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #progressFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #28a745, #20c997);
+    }
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+    }
+    .small {
+      font-size: 12px;
+      color: #555;
+    }
+    #logoPreview {
+      display: none;
+      max-width: 50px;
+      margin-left: 8px;
+    }
+    #logoPreview img {
+      max-width: 100%;
+    }
     @media (max-width: 600px) {
-      .qr-item{max-width:100%}
-      input[type=text], select{min-width:150px}
+      .qr-item {
+        max-width: 100%;
+      }
+      input[type="text"], select {
+        min-width: 150px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Excel → Custom QR (offline)</h1>
-    <div class="small">Upload Excel, tự sinh QR (QRCode.js) — chèn logo + ghi chú — tải từng ảnh hoặc tải tất cả (ZIP)</div>
+    <h1>Excel → BIDV QR (offline)</h1>
+    <div class="small">Tạo QR ngân hàng BIDV từ file Excel — chèn logo + số tài khoản</div>
   </header>
 
   <main>
     <div id="controls">
       <input id="upload" type="file" accept=".xlsx,.xls" aria-label="Tải lên file Excel" />
       <select id="sheetSelect" style="display:none" aria-label="Chọn sheet Excel"></select>
-      <input id="search" type="text" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." aria-label="Tìm kiếm dữ liệu" />
+      <input id="search" type="text" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount..." aria-label="Tìm kiếm dữ liệu" />
       <label class="ghost" style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:6px;">
         Logo: <input id="logoFile" type="file" accept="image/*" style="border:none;padding:0;margin:0" aria-label="Tải lên logo" />
       </label>
@@ -61,7 +159,7 @@
 
     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
       <label>Kích thước QR (px):
-        <input id="qrSize" type="number" value="400" min="100" max="1000" style="width:100px; margin-left:8px" aria-label="Kích thước QR code" />
+        <input id="qrSize" type="number" value="250" min="100" max="500" style="width:100px; margin-left:8px" aria-label="Kích thước QR code" />
       </label>
       <label>Màu QR: <input id="colorDark" type="color" value="#000000" aria-label="Màu QR code" /></label>
       <label>Nền: <input id="colorLight" type="color" value="#ffffff" aria-label="Màu nền QR code" /></label>
@@ -72,34 +170,10 @@
         </select>
       </label>
       <label>Kích thước logo (%):
-        <input id="logoSize" type="number" value="20" min="10" max="30" style="width:80px; margin-left:8px" aria-label="Kích thước logo" />
+        <input id="logoSize" type="number" value="15" min="10" max="30" style="width:80px; margin-left:8px" aria-label="Kích thước logo" />
       </label>
-      <label>Vị trí logo: 
-        <select id="logoPosition" aria-label="Vị trí logo">
-          <option value="center">Giữa</option>
-          <option value="top-left">Góc trên-trái</option>
-          <option value="top-right">Góc trên-phải</option>
-          <option value="bottom-left">Góc dưới-trái</option>
-          <option value="bottom-right">Góc dưới-phải</option>
-        </select>
-      </label>
-      <label>Font chữ ghi chú:
-        <select id="noteFont" aria-label="Font chữ ghi chú">
-          <option value="Arial">Arial</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Courier New">Courier New</option>
-        </select>
-      </label>
-      <label>Kích thước chữ (px):
-        <input id="noteSize" type="number" value="16" min="10" max="24" style="width:80px; margin-left:8px" aria-label="Kích thước chữ ghi chú" />
-      </label>
-      <label>Màu chữ: <input id="noteColor" type="color" value="#000000" aria-label="Màu chữ ghi chú" /></label>
       <label>Viền QR (px):
-        <input id="qrBorder" type="number" value="10" min="0" max="50" style="width:80px; margin-left:8px" aria-label="Độ dày viền QR" />
-      </label>
-      <label style="flex:1">Ghi chú mặc định:
-        <input id="defaultNote" type="text" placeholder="Dòng ghi chú nếu hàng không có Remark" style="width:100%; margin-left:8px" aria-label="Ghi chú mặc định" />
+        <input id="qrBorder" type="number" value="20" min="0" max="50" style="width:80px; margin-left:8px" aria-label="Độ dày viền QR" />
       </label>
     </div>
 
@@ -111,14 +185,14 @@
     <div id="qrs"></div>
 
     <footer>
-      <div class="small">Lưu ý: logo nên upload từ file (tránh dùng URL do CORS). Độ sửa lỗi QR được đặt ở mức H để an toàn khi chèn logo.</div>
+      <div class="small">Lưu ý: logo nên upload từ file (tránh dùng URL do CORS). Sử dụng logo BIDV chính thức để khớp thiết kế.</div>
     </footer>
   </main>
 
 <script>
   // GLOBALS
   let allData = [];
-  let currentLogoDataUrl = null;
+  let currentLogoDataUrl = null; // Placeholder for BIDV logo
   const uploadEl = document.getElementById('upload');
   const sheetSelect = document.getElementById('sheetSelect');
   const qrsContainer = document.getElementById('qrs');
@@ -134,12 +208,7 @@
   const colorLightEl = document.getElementById('colorLight');
   const qrFormatEl = document.getElementById('qrFormat');
   const logoSizeEl = document.getElementById('logoSize');
-  const logoPositionEl = document.getElementById('logoPosition');
-  const noteFontEl = document.getElementById('noteFont');
-  const noteSizeEl = document.getElementById('noteSize');
-  const noteColorEl = document.getElementById('noteColor');
   const qrBorderEl = document.getElementById('qrBorder');
-  const defaultNoteEl = document.getElementById('defaultNote');
   const downloadSampleBtn = document.getElementById('downloadSample');
 
   // Event listeners
@@ -159,12 +228,7 @@
   colorLightEl.addEventListener('change', () => renderList(allData));
   qrFormatEl.addEventListener('change', () => renderList(allData));
   logoSizeEl.addEventListener('change', () => renderList(allData));
-  logoPositionEl.addEventListener('change', () => renderList(allData));
-  noteFontEl.addEventListener('change', () => renderList(allData));
-  noteSizeEl.addEventListener('change', () => renderList(allData));
-  noteColorEl.addEventListener('change', () => renderList(allData));
   qrBorderEl.addEventListener('change', () => renderList(allData));
-  defaultNoteEl.addEventListener('input', () => renderList(allData));
 
   // --- Read uploaded Excel
   function handleFile(e) {
@@ -219,27 +283,22 @@
         map[key] = row[c];
       }
       const AccountNumber = findField(map, ['AccountNumber', 'Account', 'SoTaiKhoan', 'TaiKhoan', 'accountnumber']) || row[0];
-      const Bank = findField(map, ['Bank', 'NganHang', 'bank']) || row[1] || '';
-      const BankBin = findField(map, ['BankBin', 'BIN', 'bankbin']) || '';
+      const Bank = findField(map, ['Bank', 'NganHang', 'bank']) || 'BIDV'; // Default to BIDV
       const Amount = findField(map, ['Amount', 'SoTien', 'amount', 'amounts']) || row[3] || '';
       const AccountName = findField(map, ['AccountName', 'Name', 'Ten', 'accountname']) || row[4] || '';
-      const Remark = findField(map, ['Remark', 'Note', 'GhiChu', 'remark', 'note']) || row[5] || '';
       if (!AccountNumber) continue;
       const obj = {
         rowIndex: r + 1,
         AccountNumber: String(AccountNumber),
         Bank: String(Bank || ''),
-        BankBin: String(BankBin || ''),
         Amount: Amount,
         AccountName: String(AccountName || ''),
-        Remark: String(Remark || ''),
       };
       obj.qrText = JSON.stringify({
         accountNumber: String(obj.AccountNumber).replace(/[^\w\s.-]/g, ''),
         accountName: String(obj.AccountName).replace(/[^\w\s.-]/g, ''),
         bank: String(obj.Bank).replace(/[^\w\s.-]/g, ''),
-        amount: String(obj.Amount).replace(/[^\d.]/g, ''),
-        remark: String(obj.Remark).replace(/[^\w\s.-]/g, '')
+        amount: String(obj.Amount).replace(/[^\d.]/g, '')
       });
       obj.filename = makeSafeFilename(`qr_${obj.AccountNumber}_${obj.rowIndex}.png`);
       allData.push(obj);
@@ -278,7 +337,7 @@
         qrHolder.style.display = 'inline-block';
         card.appendChild(qrHolder);
 
-        const previewSize = Math.min(160, parseInt(qrSizeInput.value) || 160);
+        const previewSize = Math.min(160, parseInt(qrSizeInput.value) || 250);
         new QRCode(qrHolder, {
           text: item.qrText,
           width: previewSize,
@@ -296,19 +355,12 @@
         downloadBtn.style.marginRight = '8px';
         downloadBtn.setAttribute('aria-label', `Tải QR code cho ${item.AccountNumber}`);
         downloadBtn.addEventListener('click', async () => {
-          const note = item.Remark || defaultNoteEl.value || '';
-          const blob = await generateFinalImageBlob(item.qrText, item.filename, note);
+          const blob = await generateFinalImageBlob(item.qrText, item.filename, item.AccountNumber);
           saveAs(blob, item.filename);
         });
 
-        const showNote = document.createElement('div');
-        showNote.className = 'small';
-        showNote.style.marginTop = '6px';
-        showNote.textContent = item.Remark || defaultNoteEl.value || '';
-
         btnWrap.appendChild(downloadBtn);
         card.appendChild(btnWrap);
-        card.appendChild(showNote);
         qrsContainer.appendChild(card);
       });
       index += batchSize;
@@ -319,17 +371,14 @@
     requestAnimationFrame(renderBatch);
   }
 
-  // --- Generate final image blob with customizations
-  async function generateFinalImageBlob(qrText, filename, note) {
-    const size = parseInt(qrSizeInput.value) || 400;
-    const border = parseInt(qrBorderEl.value) || 0;
+  // --- Generate final image blob with BIDV design
+  async function generateFinalImageBlob(qrText, filename, accountNumber) {
+    const size = parseInt(qrSizeInput.value) || 250;
+    const border = parseInt(qrBorderEl.value) || 20;
     const colorDark = colorDarkEl.value || '#000';
     const colorLight = colorLightEl.value || '#fff';
     const format = qrFormatEl.value || 'image/png';
-    const logoScale = (parseInt(logoSizeEl.value) || 20) / 100;
-    const noteFont = noteFontEl.value || 'Arial';
-    const noteSize = parseInt(noteSizeEl.value) || 16;
-    const noteColor = noteColorEl.value || '#000';
+    const logoScale = (parseInt(logoSizeEl.value) || 15) / 100;
 
     const temp = document.createElement('div');
     try {
@@ -351,17 +400,27 @@
       qrImg.src = dataUrl;
       await new Promise((res, rej) => { qrImg.onload = res; qrImg.onerror = rej; });
 
-      const noteHeight = note ? 48 : 0;
       const canvas = document.createElement('canvas');
       canvas.width = size + border * 2;
-      canvas.height = size + noteHeight + border * 2;
+      canvas.height = size + border * 2 + 40; // Extra space for account number
       const ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = colorLight;
+      // Background and border
+      ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = var(--primary);
+      roundRect(ctx, 0, 0, canvas.width, canvas.height, 10);
+      ctx.fill();
 
+      // Yellow alignment frame
+      ctx.strokeStyle = var(--accent);
+      ctx.lineWidth = 4;
+      ctx.strokeRect(border - 2, border - 2, size + 4, size + 4);
+
+      // Draw QR code
       ctx.drawImage(qrImg, border, border, size, size);
 
+      // Draw logo (placeholder star)
       if (currentLogoDataUrl) {
         const logo = new Image();
         logo.src = currentLogoDataUrl;
@@ -371,31 +430,30 @@
         let lw = logo.width, lh = logo.height;
         const scale = Math.min(maxLogoW / lw, maxLogoH / lh, 1);
         lw = lw * scale; lh = lh * scale;
-        let lx, ly;
-        const position = logoPositionEl.value || 'center';
-        switch (position) {
-          case 'top-left': lx = border + 10; ly = border + 10; break;
-          case 'top-right': lx = border + size - lw - 10; ly = border + 10; break;
-          case 'bottom-left': lx = border + 10; ly = border + size - lh - 10; break;
-          case 'bottom-right': lx = border + size - lw - 10; ly = border + size - lh - 10; break;
-          default: lx = border + (size - lw) / 2; ly = border + (size - lh) / 2; break;
-        }
-        const pad = 6;
-        const bx = lx - pad, by = ly - pad, bw = lw + pad * 2, bh = lh + pad * 2;
-        const r = Math.min(12, Math.floor(Math.min(bw, bh) / 6));
-        roundRect(ctx, bx, by, bw, bh, r);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
+        const lx = border + (size - lw) / 2;
+        const ly = border + (size - lh) / 2;
         ctx.drawImage(logo, lx, ly, lw, lh);
+      } else {
+        // Placeholder star (yellow)
+        ctx.fillStyle = var(--accent);
+        ctx.beginPath();
+        ctx.moveTo(border + size / 2, border + size / 4);
+        ctx.lineTo(border + size / 2 + 20, border + size / 2);
+        ctx.lineTo(border + size / 2 - 20, border + size / 2);
+        ctx.closePath();
+        ctx.fill();
       }
 
-      if (note) {
-        ctx.fillStyle = noteColor;
-        ctx.textAlign = 'center';
-        ctx.font = `${noteSize}px ${noteFont}`;
-        const maxWidth = size - 20;
-        wrapText(ctx, note, canvas.width / 2, size + border + 26, maxWidth, noteSize + 2);
-      }
+      // Draw bank name (BIDV)
+      ctx.fillStyle = var(--primary);
+      ctx.font = '20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('BIDV', border + size / 2, border - 10);
+
+      // Draw account number
+      ctx.fillStyle = var(--primary);
+      ctx.font = '16px Arial';
+      ctx.fillText(`Số tài khoản: ${accountNumber}`, border + size / 2, border + size + 20);
 
       return await new Promise(res => {
         canvas.toBlob(blob => res(blob), format, format === 'image/jpeg' ? 0.9 : 1);
@@ -416,9 +474,8 @@
     let count = 0;
     for (const item of allData) {
       progressText.textContent = `Đang tạo ${count + 1}/${allData.length} — ${item.AccountNumber}`;
-      const note = item.Remark || defaultNoteEl.value || '';
       try {
-        const blob = await generateFinalImageBlob(item.qrText, item.filename, note);
+        const blob = await generateFinalImageBlob(item.qrText, item.filename, item.AccountNumber);
         const filename = item.filename.replace(/\.png$/, qrFormatEl.value === 'image/jpeg' ? '.jpg' : '.png');
         zip.file(filename, blob);
       } catch (err) {
@@ -434,7 +491,7 @@
       progressFill.style.width = Math.round(meta.percent) + '%';
       progressText.textContent = `Nén ${Math.round(meta.percent)}%`;
     });
-    saveAs(content, `all_qr_codes${qrFormatEl.value === 'image/jpeg' ? '.zip' : '.zip'}`);
+    saveAs(content, `all_bidv_qr_codes${qrFormatEl.value === 'image/jpeg' ? '.zip' : '.zip'}`);
     progressText.textContent = 'Hoàn tất';
     setTimeout(() => { progressWrap.style.display = 'none'; }, 1200);
   }
@@ -492,32 +549,12 @@
     const filtered = allData.filter(item =>
       (item.AccountName && item.AccountName.toLowerCase().includes(kw)) ||
       (item.AccountNumber && item.AccountNumber.toLowerCase().includes(kw)) ||
-      (String(item.Amount || '').toLowerCase().includes(kw)) ||
-      (item.Remark && item.Remark.toLowerCase().includes(kw))
+      (String(item.Amount || '').toLowerCase().includes(kw))
     );
     renderList(filtered);
   }
 
   // --- Helpers
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    if (!text) return;
-    const words = text.split(' ');
-    let line = '';
-    let ty = y;
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && n > 0) {
-        ctx.fillText(line.trim(), x, ty);
-        line = words[n] + ' ';
-        ty += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line.trim(), x, ty);
-  }
-
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -536,14 +573,14 @@
   function downloadSampleExcel() {
     const wb = XLSX.utils.book_new();
     const data = [
-      ['AccountNumber', 'Bank', 'BankBin', 'Amount', 'AccountName', 'Remark'],
-      ['123456789', 'BIDV', '970418', 100000, 'Nguyen Van A', 'Hoc phi thang 9'],
-      ['987654321', 'VCB', '970436', 250000, 'Tran Thi B', 'Thanh toan hop dong']
+      ['AccountNumber', 'Bank', 'Amount', 'AccountName'],
+      ['5400166777', 'BIDV', 100000, 'Nguyen Van A'],
+      ['5400166778', 'BIDV', 250000, 'Tran Thi B']
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'sample_qr_template.xlsx');
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'sample_bidv_qr_template.xlsx');
   }
 
   function makeSafeFilename(s) {
