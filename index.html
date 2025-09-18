@@ -4,17 +4,17 @@
   <meta charset="utf-8" />
   <title>Excel → BIDV QR (local)</title>
 
-  <!-- Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <!-- Libraries with fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onload="console.log('XLSX loaded')" onerror="console.error('XLSX failed to load')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onload="console.log('QRCode.js loaded')" onerror="console.error('QRCode.js failed to load')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" onload="console.log('JSZip loaded')" onerror="console.error('JSZip failed to load')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" onload="console.log('FileSaver.js loaded')" onerror="console.error('FileSaver.js failed to load')"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --primary: #006633; /* Teal color similar to BIDV */
-      --accent: #FFC107; /* Yellow for frame and logo */
+      --primary: #006633;
+      --accent: #FFC107;
     }
     body {
       font-family: Arial, sans-serif;
@@ -74,7 +74,7 @@
     }
     .qr-item {
       width: 100%;
-      max-width: 300px; /* Larger to accommodate design */
+      max-width: 300px;
       background: #fff;
       padding: 10px;
       border-radius: 10px;
@@ -135,11 +135,16 @@
         min-width: 150px;
       }
     }
+    #errorLog {
+      color: red;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Excel → BIDV QR (offline)</h1>
+    <h1>Excel → BIDV QR (local)</h1>
     <div class="small">Tạo QR ngân hàng BIDV từ file Excel — chèn logo + số tài khoản</div>
   </header>
 
@@ -184,6 +189,8 @@
 
     <div id="qrs"></div>
 
+    <div id="errorLog"></div>
+
     <footer>
       <div class="small">Lưu ý: logo nên upload từ file (tránh dùng URL do CORS). Sử dụng logo BIDV chính thức để khớp thiết kế.</div>
     </footer>
@@ -192,7 +199,7 @@
 <script>
   // GLOBALS
   let allData = [];
-  let currentLogoDataUrl = null; // Placeholder for BIDV logo
+  let currentLogoDataUrl = null;
   const uploadEl = document.getElementById('upload');
   const sheetSelect = document.getElementById('sheetSelect');
   const qrsContainer = document.getElementById('qrs');
@@ -210,6 +217,16 @@
   const logoSizeEl = document.getElementById('logoSize');
   const qrBorderEl = document.getElementById('qrBorder');
   const downloadSampleBtn = document.getElementById('downloadSample');
+  const errorLog = document.getElementById('errorLog');
+
+  // Check if all libraries are loaded
+  window.addEventListener('load', () => {
+    if (typeof XLSX === 'undefined' || typeof QRCode === 'undefined' || typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
+      logError('Một hoặc nhiều thư viện không tải được. Kiểm tra kết nối internet hoặc CDN.');
+    } else {
+      console.log('All libraries loaded successfully');
+    }
+  });
 
   // Event listeners
   uploadEl.addEventListener('change', handleFile, false);
@@ -233,7 +250,10 @@
   // --- Read uploaded Excel
   function handleFile(e) {
     const f = e.target.files[0];
-    if (!f) return;
+    if (!f) {
+      logError('Không có file được chọn.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = function(evt) {
       try {
@@ -254,7 +274,7 @@
         uploadEl._workbook = wb;
         parseSheet(wb.SheetNames[0]);
       } catch (err) {
-        alert('Lỗi đọc file Excel: ' + err.message);
+        logError('Lỗi đọc file Excel: ' + err.message);
         uploadEl.value = '';
       }
     };
@@ -263,14 +283,20 @@
 
   function onSheetChange() {
     const wb = uploadEl._workbook;
-    if (!wb) return;
+    if (!wb) {
+      logError('Workbook không tồn tại.');
+      return;
+    }
     parseSheet(sheetSelect.value);
   }
 
   function parseSheet(sheetName) {
     const wb = uploadEl._workbook;
     const sheet = wb.Sheets[sheetName];
-    if (!sheet) return;
+    if (!sheet) {
+      logError('Sheet không tồn tại: ' + sheetName);
+      return;
+    }
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
     const headers = rows[0] ? rows[0].map(h => (h || '').toString().trim()) : [];
     allData = [];
@@ -283,7 +309,7 @@
         map[key] = row[c];
       }
       const AccountNumber = findField(map, ['AccountNumber', 'Account', 'SoTaiKhoan', 'TaiKhoan', 'accountnumber']) || row[0];
-      const Bank = findField(map, ['Bank', 'NganHang', 'bank']) || 'BIDV'; // Default to BIDV
+      const Bank = findField(map, ['Bank', 'NganHang', 'bank']) || 'BIDV';
       const Amount = findField(map, ['Amount', 'SoTien', 'amount', 'amounts']) || row[3] || '';
       const AccountName = findField(map, ['AccountName', 'Name', 'Ten', 'accountname']) || row[4] || '';
       if (!AccountNumber) continue;
@@ -305,6 +331,7 @@
     }
     renderList(allData);
     downloadAllBtn.style.display = allData.length ? 'inline-block' : 'none';
+    console.log('Parsed data:', allData);
   }
 
   function findField(map, candidates) {
@@ -318,7 +345,7 @@
     return null;
   }
 
-  // --- Render list of QR previews (batched for performance)
+  // --- Render list of QR previews
   function renderList(list) {
     qrsContainer.innerHTML = '';
     let index = 0;
@@ -338,14 +365,18 @@
         card.appendChild(qrHolder);
 
         const previewSize = Math.min(160, parseInt(qrSizeInput.value) || 250);
-        new QRCode(qrHolder, {
-          text: item.qrText,
-          width: previewSize,
-          height: previewSize,
-          colorDark: colorDarkEl.value,
-          colorLight: colorLightEl.value,
-          correctLevel: QRCode.CorrectLevel.H
-        });
+        try {
+          new QRCode(qrHolder, {
+            text: item.qrText,
+            width: previewSize,
+            height: previewSize,
+            colorDark: colorDarkEl.value,
+            colorLight: colorLightEl.value,
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        } catch (err) {
+          logError('Lỗi tạo QR cho ' + item.AccountNumber + ': ' + err.message);
+        }
 
         const btnWrap = document.createElement('div');
         btnWrap.style.marginTop = '8px';
@@ -371,7 +402,7 @@
     requestAnimationFrame(renderBatch);
   }
 
-  // --- Generate final image blob with BIDV design
+  // --- Generate final image blob
   async function generateFinalImageBlob(qrText, filename, accountNumber) {
     const size = parseInt(qrSizeInput.value) || 250;
     const border = parseInt(qrBorderEl.value) || 20;
@@ -402,25 +433,21 @@
 
       const canvas = document.createElement('canvas');
       canvas.width = size + border * 2;
-      canvas.height = size + border * 2 + 40; // Extra space for account number
+      canvas.height = size + border * 2 + 40;
       const ctx = canvas.getContext('2d');
 
-      // Background and border
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = var(--primary);
       roundRect(ctx, 0, 0, canvas.width, canvas.height, 10);
       ctx.fill();
 
-      // Yellow alignment frame
       ctx.strokeStyle = var(--accent);
       ctx.lineWidth = 4;
       ctx.strokeRect(border - 2, border - 2, size + 4, size + 4);
 
-      // Draw QR code
       ctx.drawImage(qrImg, border, border, size, size);
 
-      // Draw logo (placeholder star)
       if (currentLogoDataUrl) {
         const logo = new Image();
         logo.src = currentLogoDataUrl;
@@ -434,7 +461,6 @@
         const ly = border + (size - lh) / 2;
         ctx.drawImage(logo, lx, ly, lw, lh);
       } else {
-        // Placeholder star (yellow)
         ctx.fillStyle = var(--accent);
         ctx.beginPath();
         ctx.moveTo(border + size / 2, border + size / 4);
@@ -444,13 +470,11 @@
         ctx.fill();
       }
 
-      // Draw bank name (BIDV)
       ctx.fillStyle = var(--primary);
       ctx.font = '20px Arial';
       ctx.textAlign = 'center';
       ctx.fillText('BIDV', border + size / 2, border - 10);
 
-      // Draw account number
       ctx.fillStyle = var(--primary);
       ctx.font = '16px Arial';
       ctx.fillText(`Số tài khoản: ${accountNumber}`, border + size / 2, border + size + 20);
@@ -458,6 +482,9 @@
       return await new Promise(res => {
         canvas.toBlob(blob => res(blob), format, format === 'image/jpeg' ? 0.9 : 1);
       });
+    } catch (err) {
+      logError('Lỗi tạo ảnh QR: ' + err.message);
+      throw err;
     } finally {
       temp.remove();
     }
@@ -465,7 +492,10 @@
 
   // --- Download all as ZIP
   async function onDownloadAll() {
-    if (!allData.length) return;
+    if (!allData.length) {
+      logError('Không có dữ liệu để tải.');
+      return;
+    }
     progressWrap.style.display = 'block';
     progressFill.style.width = '0%';
     progressText.textContent = 'Đang tạo ảnh...';
@@ -479,7 +509,7 @@
         const filename = item.filename.replace(/\.png$/, qrFormatEl.value === 'image/jpeg' ? '.jpg' : '.png');
         zip.file(filename, blob);
       } catch (err) {
-        console.error('Lỗi tạo ảnh cho', item, err);
+        logError('Lỗi tạo ảnh cho ' + item.AccountNumber + ': ' + err.message);
       }
       count++;
       const pct = Math.round((count / allData.length) * 100);
@@ -506,12 +536,12 @@
       return;
     }
     if (!f.type.startsWith('image/')) {
-      alert('Vui lòng chọn file ảnh (jpg, png, v.v.)');
+      logError('Vui lòng chọn file ảnh (jpg, png, v.v.)');
       logoFileEl.value = '';
       return;
     }
     if (f.size > 2 * 1024 * 1024) {
-      alert('File logo quá lớn, vui lòng chọn file dưới 2MB');
+      logError('File logo quá lớn, vui lòng chọn file dưới 2MB');
       logoFileEl.value = '';
       return;
     }
@@ -552,6 +582,14 @@
       (String(item.Amount || '').toLowerCase().includes(kw))
     );
     renderList(filtered);
+  }
+
+  // --- Error logging
+  function logError(message) {
+    console.error(message);
+    errorLog.style.display = 'block';
+    errorLog.textContent = message;
+    setTimeout(() => { errorLog.style.display = 'none'; }, 5000); // Hide after 5 seconds
   }
 
   // --- Helpers
