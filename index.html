@@ -1,79 +1,114 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PGD ĐƯỜNG 9 - BIDV QUẢNG TRỊ tạo QR theo lô</title>
-
-  <!-- Thư viện -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f5f6fa; }
     header {
-      background: #006B68;
+      background: #006B68; /* màu xanh ngọc bích BIDV */
       color: white;
-      padding: 18px 12px;
+      padding: 20px;
       text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-    header h1 { margin: 0; font-size: 20px; }
-    header p { margin: 6px 0 0; font-size: 13px; opacity: 0.95; }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 5px 0; font-size: 14px; }
 
+    /* chữ chạy quảng cáo */
     .marquee {
-      overflow: hidden; position: relative; height: 26px; margin-top: 8px;
+      overflow: hidden;
+      position: relative;
+      height: 25px;
+      margin-top: 8px;
     }
     .marquee span {
-      display: inline-block; white-space: nowrap; position: absolute;
-      will-change: transform; animation: marquee 30s linear infinite;
-      font-size: 13px; font-weight: bold; color: #FFC62F;
+      display: inline-block;
+      white-space: nowrap;
+      position: absolute;
+      will-change: transform;
+      animation: marquee 30s linear infinite;
+      font-size: 14px;
+      font-weight: bold;
+      color: #FFC62F;
     }
-    @keyframes marquee { 0% { transform: translateX(100%);} 100% { transform: translateX(-100%);} }
+    @keyframes marquee {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
 
-    main { padding: 18px; max-width: 1100px; margin: 0 auto; }
-
-    #controls { margin-bottom: 16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    #upload { padding:8px; border-radius:6px; border:1px solid #ccc; background:white; min-width:220px; }
-    #search { padding:8px 10px; border-radius:6px; border:1px solid #ccc; flex:1; min-width:240px; }
+    main { padding: 20px; }
+    #controls { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    #upload, #search, #downloadAll {
+      flex: 1;
+      min-width: 200px;
+    }
+    #upload { padding: 6px; }
+    #search {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
     #downloadAll {
-      background:#FFC62F; color:#006B68; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:bold;
+      background: #FFC62F;
+      border: none;
+      color: #006B68;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
     }
-    #downloadAll:hover { background:#e6b22b; }
-
+    #downloadAll:hover { background: #e6b22b; }
+    
+    /* QR grid responsive */
     #qrs {
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap:14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
     }
     .qr-item {
-      background:white; border-radius:8px; padding:12px; text-align:center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08); border:1px solid #e6e6e6;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .qr-item p { margin:0 0 8px 0; font-size:13px; color:#333; line-height:1.25; }
-    .qr-item img { display:block; margin:auto; max-width:100%; width: 220px; height:auto; border:1px solid #ddd; background:white; }
-    .qr-item a { display:inline-block; margin-top:8px; text-decoration:none; color:#0070f3; font-size:13px; }
+    .qr-item img { display: block; margin: auto; max-width: 150px; width: 100%; height: auto; }
+    .qr-item a {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 13px;
+      text-decoration: none;
+      color: #0070f3;
+    }
 
-    @media (max-width:600px) {
-      header h1 { font-size: 16px; }
-      header p, .marquee span { font-size: 11px; }
-      .qr-item img { width: 170px; }
+    /* Mobile chỉnh font nhỏ hơn */
+    @media (max-width: 600px) {
+      header h1 { font-size: 18px; }
+      header p, .marquee span { font-size: 12px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>PGD ĐƯỜNG 9 - BIDV QUẢNG TRỊ - Tool Excel → QR Code</h1>
-    <p>Tải file Excel để sinh QR (in thông tin lên ảnh), tìm kiếm và tải về</p>
-    <div class="marquee"><span>🎉 Ưu đãi: Tặng quà & lãi suất ưu đãi — Liên hệ Mr. Mạnh Hùng (0914 179 989) 🎉</span></div>
+    <h1>PGD ĐƯỜNG 9 - BIDV QUẢNG TRỊ - Tool Excel → QR Code Thu hộ</h1>
+    <p>Tải file Excel để sinh QR thanh toán, tìm kiếm và scan QR để thanh toán</p>
+    <div class="marquee">
+      <span>🎉 Ưu đãi đặc biệt: TẶNG LOA THÔNG BÁO CHO HỘ KINH DOANH, TẶNG TIỀN lên đến 600.000 VNĐ vào TK, Lãi suất vay ưu đãi chỉ từ 4,5%/năm | Liên hệ Mr. Mạnh Hùng (0914 179 989) để biết thêm chi tiết 🎉</span>
+    </div>
   </header>
 
   <main>
     <div id="controls">
-      <input id="upload" type="file" accept=".xlsx,.xls" />
-      <input id="search" type="text" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." />
+      <input type="file" id="upload" accept=".xlsx,.xls" />
+      <input type="text" id="search" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." />
       <button id="downloadAll" style="display:none;">⬇ Tải tất cả QR (ZIP)</button>
     </div>
 
@@ -81,349 +116,136 @@
   </main>
 
   <script>
-    // Giữ dữ liệu
-    let allData = [];      // mảng các item {AccountNumber,Bank,BankBin,Amount,AccountName,Remark,qrUrl,dataUrl}
-    let qrList = [];       // mảng ảnh đã sẵn sàng để zip [{filename,dataUrl}]
+    let qrList = [];
+    let allData = [];
 
-    // DOM
-    const uploadEl = document.getElementById('upload');
-    const searchEl = document.getElementById('search');
-    const qrsContainer = document.getElementById('qrs');
-    const downloadBtn = document.getElementById('downloadAll');
+    document.getElementById('upload').addEventListener('change', handleFile, false);
+    document.getElementById('downloadAll').addEventListener('click', downloadAll, false);
+    document.getElementById('search').addEventListener('input', filterQR, false);
 
-    uploadEl.addEventListener('change', handleFile, false);
-    searchEl.addEventListener('input', () => filterQR(), false);
-    downloadBtn.addEventListener('click', downloadAll, false);
-
-    // Đọc file Excel
     function handleFile(e) {
       const file = e.target.files[0];
-      if (!file) return;
       const reader = new FileReader();
       reader.onload = function(event) {
         const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, {type:'array'});
+        const workbook = XLSX.read(data, {type: 'array'});
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
         allData = [];
         qrList = [];
-        qrsContainer.innerHTML = "";
+        document.getElementById('qrs').innerHTML = "";
 
         for (let i = 1; i < rows.length; i++) {
-          const row = rows[i] || [];
-          const AccountNumber = row[0] ? String(row[0]).trim() : "";
-          const Bank = row[1] ? String(row[1]).trim() : "";
-          const BankBin = row[2] ? String(row[2]).trim() : "";
-          const Amount = row[3] ? String(row[3]).trim() : "";
-          const AccountName = row[4] ? String(row[4]).trim() : "";
-          const Remark = row[5] ? String(row[5]).trim() : "";
+          const [AccountNumber, Bank, BankBin, Amount, AccountName, Remark] = rows[i];
+          if (!AccountNumber || !BankBin) continue;
 
-          if (!AccountNumber) continue;
+          const qrUrl = `https://img.vietqr.io/image/${BankBin}-${AccountNumber}-compact2.png?amount=${Amount || ''}&addInfo=${encodeURIComponent(Remark || '')}&accountName=${encodeURIComponent(AccountName || '')}`;
 
-          // QR image source (originally vietqr). We'll try to fetch this; if failed, fallback to generate local QR.
-          const qrUrl = BankBin ? `https://img.vietqr.io/image/${BankBin}-${AccountNumber}-compact2.png?amount=${Amount || ''}&addInfo=${encodeURIComponent(Remark || '')}&accountName=${encodeURIComponent(AccountName || '')}` : "";
-
-          const item = { AccountNumber, Bank, BankBin, Amount, AccountName, Remark, qrUrl, dataUrl: null };
+          const item = {
+            url: qrUrl,
+            filename: `qr_${AccountNumber}.png`,
+            AccountNumber, Bank, Amount, AccountName, Remark
+          };
           allData.push(item);
         }
 
         renderQR(allData);
 
-        if (allData.length > 0) downloadBtn.style.display = "inline-block";
+        if (allData.length > 0) {
+          document.getElementById('downloadAll').style.display = "inline-block";
+        }
       };
       reader.readAsArrayBuffer(file);
     }
 
-    // Lọc
+    function renderQR(list) {
+      const container = document.getElementById('qrs');
+      container.innerHTML = "";
+      qrList = [];
+
+      list.forEach(item => {
+        qrList.push({url: item.url, filename: item.filename});
+
+        const div = document.createElement('div');
+        div.className = "qr-item";
+        div.innerHTML = `
+          <p>
+            <b>Tên tài khoản:</b> ${item.AccountName || ''}<br>
+            <b>Số tài khoản:</b> ${item.AccountNumber} (${item.Bank || ''})<br>
+            <b>Số tiền:</b> ${item.Amount || ''} VND
+          </p>
+          <img src="${item.url}" alt="QR" />
+          <p><i>${item.Remark || ''}</i></p>
+          <a href="${item.url}" download="${item.filename}">⬇ Lưu ảnh</a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
     function filterQR() {
-      const kw = (searchEl.value || "").toLowerCase();
-      if (!kw) { renderQR(allData); return; }
+      const keyword = document.getElementById('search').value.toLowerCase();
+      if (!keyword) {
+        renderQR(allData);
+        return;
+      }
       const filtered = allData.filter(item =>
-        (item.AccountName && item.AccountName.toLowerCase().includes(kw)) ||
-        (item.AccountNumber && item.AccountNumber.toLowerCase().includes(kw)) ||
-        (item.Amount && item.Amount.toLowerCase().includes(kw)) ||
-        (item.Remark && item.Remark.toLowerCase().includes(kw))
+        (item.AccountName && item.AccountName.toLowerCase().includes(keyword)) ||
+        (item.AccountNumber && item.AccountNumber.toString().includes(keyword)) ||
+        (item.Amount && item.Amount.toString().includes(keyword)) ||
+        (item.Remark && item.Remark.toLowerCase().includes(keyword))
       );
       renderQR(filtered);
     }
 
-    // Hiển thị list (tạo placeholder, tạo ảnh bất đồng bộ)
-    function renderQR(list) {
-      qrsContainer.innerHTML = "";
-      qrList = []; // reset; will be appended as images ready
+    async function downloadAll() {
+      const zip = new JSZip();
 
-      list.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = "qr-item";
-        const infoHtml = `<p><b>${escapeHtml(item.AccountName || '')}</b><br>
-          ${escapeHtml(item.AccountNumber || '')} (${escapeHtml(item.Bank || '')})<br>
-          Số tiền: ${escapeHtml(item.Amount || '')}<br>${escapeHtml(item.Remark || '')}</p>`;
+      for (const qr of qrList) {
+        try {
+          const response = await fetch(qr.url, {mode: "cors"});
+          const blob = await response.blob();
 
-        const imgEl = document.createElement('img');
-        imgEl.alt = "Đang tạo QR...";
+          if (blob.type.startsWith("image/")) {
+            zip.file(qr.filename, blob);
+          } else {
+            const img = await loadImage(qr.url);
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            const dataUrl = canvas.toDataURL("image/png");
+            const dataBlob = dataURLToBlob(dataUrl);
+            zip.file(qr.filename, dataBlob);
+          }
+        } catch (err) {
+          console.error("Lỗi tải ảnh:", qr.url, err);
+        }
+      }
 
-        const linkEl = document.createElement('a');
-        linkEl.textContent = "⬇ Lưu ảnh";
-        linkEl.href = "#";
-        linkEl.setAttribute('download', `qr_${item.AccountNumber || idx}.png`);
-
-        div.innerHTML = infoHtml;
-        div.appendChild(imgEl);
-        div.appendChild(linkEl);
-        qrsContainer.appendChild(div);
-
-        // Tạo ảnh (nếu đã tồn tại cache dataUrl thì dùng luôn)
-        createAndCacheImage(item).then(dataUrl => {
-          imgEl.src = dataUrl;
-          linkEl.href = dataUrl;
-          // thêm vào danh sách zip (nếu chưa có)
-          const existing = qrList.find(q => q.filename === `qr_${item.AccountNumber || idx}.png`);
-          if (!existing) qrList.push({ filename: `qr_${item.AccountNumber || idx}.png`, dataUrl });
-        }).catch(err => {
-          console.error("Tạo ảnh thất bại:", err);
-          imgEl.alt = "Tạo QR lỗi";
-        });
-      });
+      const content = await zip.generateAsync({type: "blob"});
+      saveAs(content, "all_qr_codes.zip");
     }
 
-    // Tạo + cache ảnh (dataUrl) cho item
-    async function createAndCacheImage(item) {
-      if (item.dataUrl) return item.dataUrl;
-      // Lấy canvas QR (từ remote image nếu có CORS ok, nếu không fallback tạo QR)
-      const qrCanvas = await getQRCodeCanvas(item);
-      // Ghép chữ lên canvas mới và trả về dataURL
-      const finalDataUrl = drawTextToCanvas(qrCanvas, item);
-      item.dataUrl = finalDataUrl;
-      return finalDataUrl;
-    }
-
-    // Thử tải remote image (fetch->blob->objectURL->Image) — nếu CORS chặn sẽ throw
-    async function tryLoadRemoteImage(url) {
-      if (!url) throw new Error("No remote URL");
-      // Thử fetch blob (works if server cho phép CORS)
-      const resp = await fetch(url, { mode: 'cors' });
-      if (!resp.ok) throw new Error('Fetch failed');
-      const blob = await resp.blob();
-      return await createImageFromBlob(blob);
-    }
-
-    function createImageFromBlob(blob) {
+    function loadImage(url) {
       return new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => {
-          URL.revokeObjectURL(img.src);
-          resolve(img);
-        };
-        img.onerror = (e) => reject(e);
-        img.src = URL.createObjectURL(blob);
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
       });
     }
 
-    // Nếu remote image không load được thì fallback tạo QR bằng qrcodejs
-    async function getQRCodeCanvas(item) {
-      const QR_SIZE = 300; // kích thước QR vuông
-      // 1) cố gắng load remote image (vietqr)
-      try {
-        if (item.qrUrl) {
-          const remoteImg = await tryLoadRemoteImage(item.qrUrl);
-          // chuyển remoteImg -> canvas
-          const c = document.createElement('canvas');
-          c.width = QR_SIZE; c.height = QR_SIZE;
-          const ctx = c.getContext('2d');
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0,0,c.width,c.height);
-          // vẽ ảnh remote vào kích thước cần
-          ctx.drawImage(remoteImg, 0, 0, c.width, c.height);
-          return c;
-        } else {
-          throw new Error("No remote url");
-        }
-      } catch (err) {
-        // fallback: tạo QR local bằng qrcodejs (nội dung là một payload đơn giản chứa thông tin)
-        const fallbackPayload = buildFallbackPayload(item);
-        const c = await generateQRCodeCanvas(fallbackPayload, QR_SIZE);
-        return c;
-      }
-    }
-
-    // Sinh payload fallback (LƯU Ý: đây là payload text để QR local hoạt động, không đảm bảo đúng format thanh toán)
-    function buildFallbackPayload(item) {
-      // Tạo chuỗi dễ hiểu để quét ra thông tin (hoặc bạn có thể đổi format)
-      return `BIDV|BIN:${item.BankBin || ''}|ACC:${item.AccountNumber || ''}|NAME:${item.AccountName || ''}|AMT:${item.Amount || ''}|NOTE:${item.Remark || ''}`;
-    }
-
-    // Sinh canvas QR dùng qrcodejs
-    function generateQRCodeCanvas(text, size=300) {
-      return new Promise((resolve) => {
-        // tạo thẻ tạm để qrcodejs render
-        const temp = document.createElement('div');
-        // đảm bảo không hiển thị
-        temp.style.position = 'fixed';
-        temp.style.left = '-9999px';
-        document.body.appendChild(temp);
-
-        // tạo QR
-        const qrObj = new QRCode(temp, {
-          text: text || '',
-          width: size,
-          height: size,
-          correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.H : undefined
-        });
-
-        // qrcodejs render bằng <img> hoặc <canvas> bên trong temp. Chờ chút rồi convert
-        setTimeout(() => {
-          // try image first
-          const img = temp.querySelector('img');
-          if (img && img.src) {
-            const canvas = document.createElement('canvas');
-            canvas.width = size; canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            const tmp = new Image();
-            tmp.onload = () => {
-              ctx.fillStyle = '#fff';
-              ctx.fillRect(0,0,canvas.width,canvas.height);
-              ctx.drawImage(tmp, 0, 0, canvas.width, canvas.height);
-              document.body.removeChild(temp);
-              resolve(canvas);
-            };
-            tmp.onerror = () => {
-              // fallback: if img can't load, try to use the inner canvas
-              const innerCanvas = temp.querySelector('canvas');
-              if (innerCanvas) {
-                const clone = document.createElement('canvas');
-                clone.width = innerCanvas.width; clone.height = innerCanvas.height;
-                clone.getContext('2d').drawImage(innerCanvas, 0, 0);
-                document.body.removeChild(temp);
-                resolve(clone);
-              } else {
-                document.body.removeChild(temp);
-                resolve(null);
-              }
-            };
-            tmp.src = img.src;
-          } else {
-            // maybe it rendered as canvas already
-            const innerCanvas = temp.querySelector('canvas');
-            if (innerCanvas) {
-              const clone = document.createElement('canvas');
-              clone.width = innerCanvas.width; clone.height = innerCanvas.height;
-              clone.getContext('2d').drawImage(innerCanvas, 0, 0);
-              document.body.removeChild(temp);
-              resolve(clone);
-            } else {
-              document.body.removeChild(temp);
-              resolve(null);
-            }
-          }
-        }, 80); // short delay for render
-      });
-    }
-
-    // Vẽ chữ lên canvas QR (trả về dataURL ảnh cuối cùng)
-    function drawTextToCanvas(qrCanvas, item) {
-      const padding = 12;
-      const qrW = qrCanvas.width;
-      const qrH = qrCanvas.height;
-      const textAreaHeight = 110; // chỗ cho các dòng text
-      const canvas = document.createElement('canvas');
-      canvas.width = qrW + padding * 2;
-      canvas.height = qrH + padding + textAreaHeight;
-      const ctx = canvas.getContext('2d');
-
-      // background trắng
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // vẽ QR (giữa theo chiều ngang)
-      const x = (canvas.width - qrW) / 2;
-      ctx.drawImage(qrCanvas, x, padding, qrW, qrH);
-
-      // vẽ viền nhỏ quanh QR (tùy chọn)
-      ctx.strokeStyle = '#e0e0e0';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x - 1, padding - 1, qrW + 2, qrH + 2);
-
-      // vẽ text
-      ctx.fillStyle = '#000';
-      ctx.textBaseline = 'top';
-      const left = 12;
-      let y = padding + qrH + 8;
-
-      // Sử dụng font phù hợp; tuỳ chỉnh kích thước nếu cần
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('Số tài khoản: ' + (item.AccountNumber || ''), left, y);
-      y += 20;
-
-      ctx.font = '14px Arial';
-      ctx.fillText('Tên tài khoản: ' + (item.AccountName || ''), left, y);
-      y += 20;
-
-      ctx.fillText('Số tiền: ' + (item.Amount || ''), left, y);
-      y += 20;
-
-      // Nội dung có thể dài -> wrap text
-      const note = 'Nội dung: ' + (item.Remark || '');
-      ctx.font = '14px Arial';
-      wrapText(ctx, note, left, y, canvas.width - left*2, 18);
-
-      return canvas.toDataURL('image/png');
-    }
-
-    // Hàm wrap text đơn giản
-    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-      const words = text.split(' ');
-      let line = '';
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        const testWidth = metrics.width;
-        if (testWidth > maxWidth && n > 0) {
-          ctx.fillText(line, x, y);
-          line = words[n] + ' ';
-          y += lineHeight;
-        } else {
-          line = testLine;
-        }
-      }
-      ctx.fillText(line, x, y);
-    }
-
-    // Tải tất cả (zip)
-    async function downloadAll() {
-      if (!qrList || qrList.length === 0) {
-        alert('Chưa có ảnh QR để tải.');
-        return;
-      }
-      const zip = new JSZip();
-      for (const item of qrList) {
-        try {
-          const blob = dataURLToBlob(item.dataUrl);
-          zip.file(item.filename, blob);
-        } catch (err) {
-          console.error('ZIP lỗi cho', item.filename, err);
-        }
-      }
-      const content = await zip.generateAsync({type:'blob'});
-      saveAs(content, 'all_qr_codes.zip');
-    }
-
-    // Helpers
-    function dataURLToBlob(dataurl) {
-      const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    function dataURLToBlob(dataUrl) {
+      const parts = dataUrl.split(",");
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
       while (n--) u8arr[n] = bstr.charCodeAt(n);
-      return new Blob([u8arr], {type:mime});
+      return new Blob([u8arr], { type: mime });
     }
-
-    // Xóa ký tự html (để an toàn hiển thị)
-    function escapeHtml(text) {
-      if (!text) return '';
-      return String(text).replace(/[&<>"']/g, function (m) {
-        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];
-      });
-    }
-
-    // Thoả thuận: mỗi lần render lại filter sẽ tạo ảnh mới nếu chưa cache; item.dataUrl được cache trên object item.
   </script>
 </body>
 </html>
