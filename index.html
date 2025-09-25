@@ -3,249 +3,152 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PGD ĐƯỜNG 9 - BIDV QUẢNG TRỊ tạo QR theo lô</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <title>BIDV - Tra cứu QR nộp thuế</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f5f6fa; }
-    header {
-      background: #006B68; /* màu xanh ngọc bích BIDV */
-      color: white;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    header h1 { margin: 0; font-size: 22px; }
-    header p { margin: 5px 0; font-size: 14px; }
-
-    /* chữ chạy quảng cáo */
-    .marquee {
-      overflow: hidden;
-      position: relative;
-      height: 25px;
-      margin-top: 8px;
-    }
-    .marquee span {
-      display: inline-block;
-      white-space: nowrap;
-      position: absolute;
-      will-change: transform;
-      animation: marquee 30s linear infinite;
-      font-size: 14px;
-      font-weight: bold;
-      color: #FFC62F;
-    }
-    @keyframes marquee {
-      0%   { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-
-    main { padding: 20px; }
-    #controls { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-    #upload, #search, #downloadAll {
-      flex: 1;
-      min-width: 200px;
-    }
-    #upload { padding: 6px; }
-    #search {
-      padding: 6px 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-    }
-    #downloadAll {
-      background: #FFC62F;
-      border: none;
-      color: #006B68;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-    }
-    #downloadAll:hover { background: #e6b22b; }
-    
-    /* QR grid responsive */
-    #qrs {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-    .qr-item {
-      border: 1px solid #ccc;
-      background: white;
-      border-radius: 6px;
-      padding: 10px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .qr-item img { display: block; margin: auto; max-width: 150px; width: 100%; height: auto; }
-    .qr-item a {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 13px;
-      text-decoration: none;
-      color: #0070f3;
-    }
-
-    /* Mobile chỉnh font nhỏ hơn */
-    @media (max-width: 600px) {
-      header h1 { font-size: 18px; }
-      header p, .marquee span { font-size: 12px; }
-    }
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+    header { background:#20B2AA; color:white; padding:10px; text-align:center; }
+    header h1 { margin:0; font-size:20px; }
+    header marquee { color:yellow; font-size:14px; white-space:nowrap; overflow:hidden; }
+    .container { padding:15px; }
+    .filters { margin-bottom:10px; display:flex; flex-wrap:wrap; gap:10px; }
+    input, select { padding:8px; font-size:14px; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; background:white; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:left; font-size:13px; }
+    th { background:#20B2AA; color:white; }
+    .pagination { margin-top:10px; text-align:center; }
+    .pagination button { padding:6px 12px; margin:2px; border:none; background:#20B2AA; color:white; cursor:pointer; }
+    .pagination button:disabled { background:#ccc; cursor:not-allowed; }
+    #qrBox { display:none; margin-top:15px; padding:10px; border:1px solid #ccc; background:#fff; text-align:center; }
+    #qrBox h3 { margin-top:0; color:#20B2AA; }
+    #qrBox img { max-width:280px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>PGD ĐƯỜNG 9 - BIDV QUẢNG TRỊ - Tool Excel → QR Code Thu hộ</h1>
-    <p>Tải file Excel để sinh QR thanh toán, tìm kiếm và scan QR để thanh toán</p>
-    <div class="marquee">
-      <span>🎉 Ưu đãi đặc biệt: TẶNG LOA THÔNG BÁO CHO HỘ KINH DOANH, TẶNG TIỀN lên đến 600.000 VNĐ vào TK, Lãi suất vay ưu đãi chỉ từ 4,5%/năm | Liên hệ Mr. Mạnh Hùng (0914 179 989) để biết thêm chi tiết 🎉</span>
-    </div>
+    <h1>BIDV - Công cụ tra cứu QR nộp thuế</h1>
+    <marquee behavior="scroll" direction="left">BIDV đồng hành cùng Nhà nước - Thu thuế nhanh chóng qua QR Code</marquee>
   </header>
-
-  <main>
-    <div id="controls">
-      <input type="file" id="upload" accept=".xlsx,.xls" />
-      <input type="text" id="search" placeholder="🔍 Tìm theo AccountName / AccountNumber / Amount / Remark..." />
-      <button id="downloadAll" style="display:none;">⬇ Tải tất cả QR (ZIP)</button>
+  <div class="container">
+    <div class="filters">
+      <input type="text" id="searchBox" placeholder="🔍 Nhập tên hoặc mã số thuế...">
+      <select id="phuongSelect"><option value="">Chọn Phường/Xã</option></select>
+      <select id="thonSelect"><option value="">Chọn Thôn/Tổ</option></select>
     </div>
-
-    <div id="qrs"></div>
-  </main>
-
+    <div id="qrBox">
+      <h3>Mã QR nộp thuế</h3>
+      <img id="qrImage" src="" alt="QR">
+      <p id="qrInfo"></p>
+    </div>
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>Tên tài khoản</th>
+          <th>Mã số thuế</th>
+          <th>Phường/Xã</th>
+          <th>Thôn/Tổ</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
   <script>
-    let qrList = [];
-    let allData = [];
+    let data = [];
+    const rowsPerPage = 50;
+    let currentPage = 1;
+    let filteredData = [];
 
-    document.getElementById('upload').addEventListener('change', handleFile, false);
-    document.getElementById('downloadAll').addEventListener('click', downloadAll, false);
-    document.getElementById('search').addEventListener('input', filterQR, false);
+    // Load dữ liệu từ data.json
+    fetch("data.json")
+      .then(res => res.json())
+      .then(json => {
+        data = json;
+        filteredData = data;
+        populatePhuongOptions();
+        renderTable();
+      });
 
-    function handleFile(e) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
-        allData = [];
-        qrList = [];
-        document.getElementById('qrs').innerHTML = "";
-
-        for (let i = 1; i < rows.length; i++) {
-          const [AccountNumber, Bank, BankBin, Amount, AccountName, Remark] = rows[i];
-          if (!AccountNumber || !BankBin) continue;
-
-          const qrUrl = `https://img.vietqr.io/image/${BankBin}-${AccountNumber}-compact2.png?amount=${Amount || ''}&addInfo=${encodeURIComponent(Remark || '')}&accountName=${encodeURIComponent(AccountName || '')}`;
-
-          const item = {
-            url: qrUrl,
-            filename: `qr_${AccountNumber}.png`,
-            AccountNumber, Bank, Amount, AccountName, Remark
-          };
-          allData.push(item);
+    function populatePhuongOptions() {
+      const phuongSet = [...new Set(data.map(d => d["PHƯỜNG/XÃ"]))];
+      const select = document.getElementById("phuongSelect");
+      phuongSet.forEach(p => {
+        if(p){
+          const opt = document.createElement("option");
+          opt.value = p; opt.textContent = p;
+          select.appendChild(opt);
         }
-
-        renderQR(allData);
-
-        if (allData.length > 0) {
-          document.getElementById('downloadAll').style.display = "inline-block";
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function renderQR(list) {
-      const container = document.getElementById('qrs');
-      container.innerHTML = "";
-      qrList = [];
-
-      list.forEach(item => {
-        qrList.push({url: item.url, filename: item.filename});
-
-        const div = document.createElement('div');
-        div.className = "qr-item";
-        div.innerHTML = `
-          <p>
-            <b>Tên tài khoản:</b> ${item.AccountName || ''}<br>
-            <b>Số tài khoản:</b> ${item.AccountNumber} (${item.Bank || ''})<br>
-            <b>Số tiền:</b> ${item.Amount || ''} VND
-          </p>
-          <img src="${item.url}" alt="QR" />
-          <p><i>${item.Remark || ''}</i></p>
-          <a href="${item.url}" download="${item.filename}">⬇ Lưu ảnh</a>
-        `;
-        container.appendChild(div);
       });
     }
 
-    function filterQR() {
-      const keyword = document.getElementById('search').value.toLowerCase();
-      if (!keyword) {
-        renderQR(allData);
-        return;
-      }
-      const filtered = allData.filter(item =>
-        (item.AccountName && item.AccountName.toLowerCase().includes(keyword)) ||
-        (item.AccountNumber && item.AccountNumber.toString().includes(keyword)) ||
-        (item.Amount && item.Amount.toString().includes(keyword)) ||
-        (item.Remark && item.Remark.toLowerCase().includes(keyword))
-      );
-      renderQR(filtered);
-    }
-
-    async function downloadAll() {
-      const zip = new JSZip();
-
-      for (const qr of qrList) {
-        try {
-          const response = await fetch(qr.url, {mode: "cors"});
-          const blob = await response.blob();
-
-          if (blob.type.startsWith("image/")) {
-            zip.file(qr.filename, blob);
-          } else {
-            const img = await loadImage(qr.url);
-            const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
-            const dataUrl = canvas.toDataURL("image/png");
-            const dataBlob = dataURLToBlob(dataUrl);
-            zip.file(qr.filename, dataBlob);
+    function populateThonOptions(phuong) {
+      const select = document.getElementById("thonSelect");
+      select.innerHTML = "<option value=''>Chọn Thôn/Tổ</option>";
+      if (phuong) {
+        const thonSet = [...new Set(data.filter(d => d["PHƯỜNG/XÃ"]===phuong).map(d => d["THÔN/TỔ/KHU PHỐ"]))];
+        thonSet.forEach(t => {
+          if(t){
+            const opt = document.createElement("option");
+            opt.value = t; opt.textContent = t;
+            select.appendChild(opt);
           }
-        } catch (err) {
-          console.error("Lỗi tải ảnh:", qr.url, err);
-        }
+        });
       }
-
-      const content = await zip.generateAsync({type: "blob"});
-      saveAs(content, "all_qr_codes.zip");
     }
 
-    function loadImage(url) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
+    function renderTable() {
+      const tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
+      const start = (currentPage-1)*rowsPerPage;
+      const pageData = filteredData.slice(start, start+rowsPerPage);
+      pageData.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${row.AccountName || ""}</td><td>${row.MST || ""}</td><td>${row["PHƯỜNG/XÃ"] || ""}</td><td>${row["THÔN/TỔ/KHU PHỐ"] || ""}</td>`;
+        tr.onclick = () => showQR(row);
+        tbody.appendChild(tr);
       });
+      renderPagination();
     }
 
-    function dataURLToBlob(dataUrl) {
-      const parts = dataUrl.split(",");
-      const mime = parts[0].match(/:(.*?);/)[1];
-      const bstr = atob(parts[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) u8arr[n] = bstr.charCodeAt(n);
-      return new Blob([u8arr], { type: mime });
+    function renderPagination() {
+      const totalPages = Math.ceil(filteredData.length/rowsPerPage);
+      const container = document.getElementById("pagination");
+      container.innerHTML = "";
+      for (let i=1;i<=totalPages;i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.disabled = i===currentPage;
+        btn.onclick = () => { currentPage=i; renderTable(); };
+        container.appendChild(btn);
+      }
     }
+
+    function showQR(row) {
+      const qrUrl = `https://img.vietqr.io/image/${row.BankBin}-${row.AccountNumber}-compact.png?amount=${row.Amount||""}&addInfo=${encodeURIComponent(row.Remark||"")}&accountName=${encodeURIComponent(row.AccountName||"")}`;
+      document.getElementById("qrImage").src = qrUrl;
+      document.getElementById("qrInfo").textContent = `${row.AccountName || ""} - MST: ${row.MST || ""}`;
+      document.getElementById("qrBox").style.display = "block";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function applyFilters() {
+      const keyword = document.getElementById("searchBox").value.toLowerCase();
+      const phuong = document.getElementById("phuongSelect").value;
+      const thon = document.getElementById("thonSelect").value;
+      filteredData = data.filter(r => {
+        return (!keyword || (r.AccountName && r.AccountName.toLowerCase().includes(keyword)) || (r.MST && r.MST.toString().includes(keyword)))
+          && (!phuong || r["PHƯỜNG/XÃ"]===phuong)
+          && (!thon || r["THÔN/TỔ/KHU PHỐ"]===thon);
+      });
+      currentPage = 1;
+      renderTable();
+    }
+
+    document.getElementById("searchBox").addEventListener("input", applyFilters);
+    document.getElementById("phuongSelect").addEventListener("change", (e)=>{
+      populateThonOptions(e.target.value);
+      applyFilters();
+    });
+    document.getElementById("thonSelect").addEventListener("change", applyFilters);
   </script>
 </body>
 </html>
